@@ -64,16 +64,17 @@ router.get('/', async (req, res) => {
 /**
  * Get a lost ID by ID Number or Owner Name
  */
-router.get('/:query', async (req, res) => {
+router.get('/id/:id', async (req, res) => {
     try {
-        const { query } = req.params;
+        const { id } = req.params;
 
         const { data, error } = await supabase
             .from('lost_ids')
             .select('*')
-            .or(`id_number.eq.${query},owner_name.ilike.%${query}%`);
+            .eq('id', id)
+            .single(); // Ensure a single record is returned
 
-        if (error || !data.length) {
+        if (error || !data) {
             console.error("Error fetching lost ID:", error);
             return res.status(404).json({ error: 'Lost ID not found' });
         }
@@ -84,7 +85,6 @@ router.get('/:query', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
-
 /**
  * Search & Filter Lost IDs
  */
