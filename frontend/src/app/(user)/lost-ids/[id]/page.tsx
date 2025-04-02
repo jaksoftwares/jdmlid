@@ -3,13 +3,15 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FaArrowLeft, FaIdCard, FaMapMarkerAlt, FaCheckCircle } from "react-icons/fa";
 import api from "@/utils/api";
+import { LostID } from "@/types/types"
 
 const LostIDDetails = () => {
   const params = useParams(); // Get dynamic route params
   const router = useRouter();
   const id = params.id as string; // Ensure ID is a string
 
-  const [idDetails, setIdDetails] = useState<any>(null);
+  // Use the LostID type for the state variable
+  const [idDetails, setIdDetails] = useState<LostID | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

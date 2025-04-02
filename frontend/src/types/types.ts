@@ -17,3 +17,18 @@ export interface LostID {
     recovery_fee: number;
   }
   
+
+  export interface ClaimData {
+    id: string;
+    lost_id: string;
+    user_id: string;
+    category_id: string;
+    name: string;
+    email: string;
+    phone: string;
+    comments: string;
+    payment_status: string;
+    status: string;
+    created_at: string; // Consider using Date if you want to handle date objects
+  }
+  

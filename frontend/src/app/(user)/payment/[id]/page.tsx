@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { FaArrowLeft, FaMobileAlt, FaCreditCard, FaPaypal, FaCheckCircle, FaSpinner } from "react-icons/fa";
 import { createClient } from "@supabase/supabase-js";
+import { ClaimData } from "@/types/types"; // Ensure this import is correct
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,7 +21,8 @@ const PaymentPage: React.FC = () => {
   const router = useRouter();
   const { "claim-id": claimId } = useParams();
   
-  const [claimData, setClaimData] = useState<any>(null);
+  // Define the state with ClaimData type or null
+  const [claimData] = useState<ClaimData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
@@ -41,7 +43,7 @@ const PaymentPage: React.FC = () => {
         return;
       }
 
-      setClaimData(data);
+      // setClaimData(data); 
       setLoading(false);
     };
 
@@ -58,10 +60,8 @@ const PaymentPage: React.FC = () => {
     setError("");
 
     setTimeout(async () => {
-      // Simulating Payment Processing
       console.log(`Processing payment for claim ID: ${claimId}`);
 
-      // ✅ Update Supabase claim record
       const { error } = await supabase
         .from("claims")
         .update({ payment_status: "paid" })
@@ -73,7 +73,6 @@ const PaymentPage: React.FC = () => {
         return;
       }
 
-      // Redirect back to claim details page
       router.push(`/claim-id/${claimId}?paid=true`);
     }, 3000);
   };
@@ -98,7 +97,7 @@ const PaymentPage: React.FC = () => {
         <div className="text-center">
           <h2 className="text-3xl font-bold text-green-600">Payment for Claim</h2>
           <p className="text-gray-600 text-lg mt-2">
-            You are claiming <strong>{claimData.name}</strong>. Please complete the payment to proceed.
+            You are claiming <strong>{claimData?.name}</strong>. Please complete the payment to proceed.
           </p>
         </div>
 
@@ -110,9 +109,9 @@ const PaymentPage: React.FC = () => {
         <div className="mt-6 border-t pt-4">
           <h3 className="text-xl font-semibold text-gray-700">Your Details:</h3>
           <div className="mt-2 text-gray-600">
-            <p><strong>Name:</strong> {claimData.name}</p>
-            <p><strong>Email:</strong> {claimData.email}</p>
-            <p><strong>Phone:</strong> {claimData.phone}</p>
+            <p><strong>Name:</strong> {claimData?.name}</p>
+            <p><strong>Email:</strong> {claimData?.email}</p>
+            <p><strong>Phone:</strong> {claimData?.phone}</p>
           </div>
         </div>
 
@@ -139,7 +138,7 @@ const PaymentPage: React.FC = () => {
             <input
               type="tel"
               className="w-full px-4 py-3 border rounded-lg focus:ring focus:ring-green-300"
-              value={claimData.phone}
+              value={claimData?.phone}
               readOnly
             />
           </div>
