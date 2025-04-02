@@ -1,13 +1,9 @@
-"use client"
+"use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
-interface ReportFoundIDProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const ReportFoundID: React.FC<ReportFoundIDProps> = ({ isOpen, onClose }) => {
+const ReportFoundID = () => {
   const [formData, setFormData] = useState({
     id_number: "",
     owner_name: "",
@@ -33,60 +29,76 @@ const ReportFoundID: React.FC<ReportFoundIDProps> = ({ isOpen, onClose }) => {
     alert("This is a static form. Submission will be implemented later.");
   };
 
-  if (!isOpen) return null; // Prevent rendering when modal is closed
-
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-md">
-        <h2 className="text-xl font-semibold mb-4">Report Found ID</h2>
+    <main className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold">Report Found ID</h1>
+          <Link href="/" className="text-gray-500 hover:text-gray-700">
+            &larr; Back
+          </Link>
+        </div>
 
         {/* Form Fields */}
-        {["id_number", "owner_name", "location_found", "date_found", "contact_info"].map((field) => (
-          <div key={field} className="mb-3">
-            <label className="block font-semibold capitalize">{field.replace(/_/g, " ")}</label>
-            <input
-              type={field === "date_found" ? "date" : "text"}
-              name={field}
-              value={formData[field as keyof typeof formData]}
-              onChange={handleChange}
-              className="border p-2 w-full rounded"
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+          {["id_number", "owner_name", "location_found", "date_found", "contact_info"].map((field) => (
+            <div key={field} className="mb-4">
+              <label className="block font-medium mb-2 capitalize">
+                {field.replace(/_/g, " ")}
+              </label>
+              <input
+                type={field === "date_found" ? "date" : "text"}
+                name={field}
+                value={formData[field as keyof typeof formData]}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+          ))}
+
+          {/* Image Upload */}
+          <div className="mb-4">
+            <label className="block font-medium mb-2">Upload ID Image</label>
+            <input 
+              type="file" 
+              onChange={handleImageChange} 
+              className="w-full p-2 border rounded-md"
+              accept="image/*"
             />
+            {imageFile && <p className="mt-2 text-sm text-gray-600">Selected: {imageFile.name}</p>}
           </div>
-        ))}
 
-        {/* Image Upload */}
-        <div className="mb-3">
-          <label className="block font-semibold">Upload ID Image</label>
-          <input type="file" onChange={handleImageChange} className="border p-2 w-full rounded" />
-          {imageFile && <p className="text-sm text-gray-500 mt-1">Selected: {imageFile.name}</p>}
-        </div>
+          {/* Comments */}
+          <div className="mb-6">
+            <label className="block font-medium mb-2">Additional Comments</label>
+            <textarea
+              name="comments"
+              value={formData.comments}
+              onChange={handleChange}
+              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              rows={4}
+            ></textarea>
+          </div>
 
-        {/* Comments */}
-        <div className="mb-3">
-          <label className="block font-semibold">Additional Comments</label>
-          <textarea
-            name="comments"
-            value={formData.comments}
-            onChange={handleChange}
-            className="border p-2 w-full rounded"
-            rows={3}
-          ></textarea>
-        </div>
-
-        {/* Buttons */}
-        <div className="flex justify-between mt-4">
-          <button onClick={onClose} className="bg-gray-400 text-white px-4 py-2 rounded-lg">
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-          >
-            Report Found ID
-          </button>
-        </div>
+          {/* Submit Button */}
+          <div className="flex justify-end gap-4">
+            <Link
+              href="/"
+              className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Submit Report
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
+    </main>
   );
 };
 
