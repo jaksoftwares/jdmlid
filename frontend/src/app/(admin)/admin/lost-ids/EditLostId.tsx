@@ -9,9 +9,10 @@ interface EditLostIDProps {
   isOpen: boolean;
   onClose: () => void;
   lostID: LostID | null;
+  onUpdate: (updatedID: LostID) => void; // Added onUpdate prop
 }
 
-const EditLostID = ({ isOpen, onClose, lostID }: EditLostIDProps) => {
+const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<LostID> | null>(lostID);
 
@@ -30,6 +31,7 @@ const EditLostID = ({ isOpen, onClose, lostID }: EditLostIDProps) => {
           ? prev.map((item) => (item.id === updatedLostID.id ? updatedLostID : item))
           : []
       );
+      onUpdate(updatedLostID); // Call the onUpdate prop
       alert("Lost ID updated successfully.");
       onClose();
     },
@@ -96,7 +98,7 @@ const EditLostID = ({ isOpen, onClose, lostID }: EditLostIDProps) => {
           <button
             onClick={handleSubmit}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            disabled={mutation.status === "pending"} // ✅ Handle loading state
+            disabled={mutation.status === "pending"}
           >
             {mutation.status === "pending" ? "Saving..." : "Save Changes"}
           </button>
