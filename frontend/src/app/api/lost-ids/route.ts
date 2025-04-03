@@ -81,10 +81,26 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Get all lost IDs (Public)
-export async function GET() {
+// Unified GET Request Handler TO GET IDS
+export async function GET(req: NextRequest) {
   try {
-    const { data, error } = await supabase.from("lost_ids").select("*");
+    const url = new URL(req.url); // Get full URL
+    const query = url.searchParams.get("query"); // Extract 'query' param
+    const category = url.searchParams.get("category"); // Extract 'category' param
+
+    let request = supabase.from("lost_ids").select("*");
+
+    // Apply search filtering if 'query' is present
+    if (query) {
+      request = request.or(`id_number.ilike.%${query}%,owner_name.ilike.%${query}%`);
+    }
+
+    // Apply category filtering if 'category' is present
+    if (category) {
+      request = request.eq("category_id", category);
+    }
+
+    const { data, error } = await request;
 
     if (error) {
       console.error("Error fetching lost IDs:", error);
@@ -97,38 +113,6 @@ export async function GET() {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-
-// Search & Filter Lost IDs
-export async function GET_search(req: NextRequest) {
-  try {
-    const url = new URL(req.url); // Get full URL
-    const query = url.searchParams.get('query');  // Get 'query' from URL query string
-    const category = url.searchParams.get('category'); // Get 'category' from URL query string
-
-    let request = supabase.from("lost_ids").select("*");
-
-    if (query) {
-      request = request.or(`id_number.ilike.%${query}%,owner_name.ilike.%${query}%`);
-    }
-
-    if (category) {
-      request = request.eq("category_id", category);
-    }
-
-    const { data, error } = await request;
-
-    if (error) {
-      console.error("Error searching lost IDs:", error);
-      return NextResponse.json({ error: "Error searching lost IDs" }, { status: 500 });
-    }
-
-    return NextResponse.json(data, { status: 200 });
-  } catch (err) {
-    console.error("Error searching lost IDs:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
-
 // Delete a Lost ID (Admin Only)
 export async function DELETE(req: NextRequest) {
   try {
