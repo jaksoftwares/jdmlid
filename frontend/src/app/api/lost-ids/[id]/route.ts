@@ -9,8 +9,8 @@ const supabase = createClient(
 const isValidUUID = (uuid: string) =>
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
 
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params; // Destructure the id from the params
+export async function GET(req: NextRequest, { params }: { params: Record<string, string> }) {
+  const { id } = params; // Destructure the id from params
 
   if (!isValidUUID(id)) {
     return NextResponse.json(
