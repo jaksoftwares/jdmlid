@@ -1,20 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_ANON_KEY!
 );
 
-// Utility function to validate UUID format
 const isValidUUID = (uuid: string) =>
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Record<string, string | string[]> }
+) {
+  // Handle potential array case (required by Next.js type system)
+  const rawId = params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
 
-  // Validate if the id is in a valid UUID format
+  // Validate ID type and existence
+  if (typeof id !== "string" || !id) {
+    return NextResponse.json(
+      { error: "Invalid ID format" },
+      { status: 400 }
+    );
+  }
+
+  // Validate UUID format
   if (!isValidUUID(id)) {
     return NextResponse.json(
       { error: "Invalid ID format" },
@@ -23,7 +34,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 
   try {
-    // Query Supabase for the lost ID details
     const { data, error } = await supabase
       .from("lost_ids")
       .select("*")
