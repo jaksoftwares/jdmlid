@@ -6,18 +6,20 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
+// Utility function to validate UUID format
 const isValidUUID = (uuid: string) =>
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string | string[] } }
+  { params }: { params: { id: string } } // Ensure type is strictly { id: string }
 ) {
-  // Handle potential array case (required by Next.js type system)
   const rawId = params.id;
+
+  // Check if id is an array (Next.js sometimes sends an array for params)
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
 
-  // Validate ID type and existence
+  // Validate that the id is a valid string and exists
   if (typeof id !== "string" || !id) {
     return NextResponse.json(
       { error: "Invalid ID format" },
@@ -34,6 +36,7 @@ export async function GET(
   }
 
   try {
+    // Fetch data from Supabase
     const { data, error } = await supabase
       .from("lost_ids")
       .select("*")
