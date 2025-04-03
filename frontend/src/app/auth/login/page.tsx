@@ -17,17 +17,20 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/auth/login', {
+      // Adjust the fetch URL to match your Next.js API endpoint
+      const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, action: 'login' }), // Include the "action" parameter
       });
 
       const data = await response.json();
+
       if (response.ok) {
-        localStorage.setItem('token', data.session.access_token); // Store token for authentication
-        localStorage.setItem('user', JSON.stringify(data.user)); // Store user info
-        router.push('/'); 
+        // Save the session and user details to localStorage
+        localStorage.setItem('token', data.session.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        router.push('/'); // Redirect to the homepage or another page
       } else {
         setError(data.error || 'Login failed. Please try again.');
       }

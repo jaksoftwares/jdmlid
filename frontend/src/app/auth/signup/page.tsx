@@ -17,25 +17,30 @@ const SignupPage = () => {
   const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
     setMessage({ type: "", text: "" });
-  
+
     if (password !== confirmPassword) {
       setMessage({ type: "error", text: "Passwords do not match!" });
       return;
     }
-  
+
     setIsLoading(true);
-  
-    const requestBody = JSON.stringify({ name, email, password });
-  
+
+    const requestBody = JSON.stringify({
+      name,
+      email,
+      password,
+      action: "signup",  // Include the action to specify it's a signup request
+    });
+
     try {
-      const response = await fetch("http://localhost:5000/auth/signup", {
+      const response = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: requestBody,
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
         setMessage({ type: "success", text: "Signup successful! Redirecting to login..." });
         setTimeout(() => router.push("/auth/login"), 3000);
@@ -49,8 +54,7 @@ const SignupPage = () => {
       setIsLoading(false);
     }
   };
-  
-  
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="bg-white p-6 sm:p-8 rounded-lg shadow-lg max-w-md w-full">
@@ -132,7 +136,7 @@ const SignupPage = () => {
 
         <p className="text-center text-gray-700 mt-4">
           Already have an account?{" "}
-          <Link href="/login" className="text-jkuatGreen font-semibold hover:underline">
+          <Link href="/auth/login" className="text-jkuatGreen font-semibold hover:underline">
             Log in
           </Link>
         </p>

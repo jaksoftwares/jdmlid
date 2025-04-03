@@ -8,37 +8,6 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-// Signup Route
-// router.post('/signup', async (req, res) => {
-//   console.log("🔹 Received Body:", req.body);
-
-//   const { name, email, password } = req.body;
-//   if (!name || !email || !password) {
-//     console.log("🚨 Missing Fields:", { name, email, password });
-//     return res.status(400).json({ error: 'Name, email, and password are required.' });
-//   }
-
-//   console.log("🔄 Sending to Supabase:", { email, password });
-
-//   try {
-//     const { data, error } = await supabase.auth.signUp(
-//       { email, password, options: { data: { full_name: name } } },
-//       { headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}` } }
-//     );
-
-//     if (error) {
-//       console.log("❌ Supabase Signup Error:", error);
-//       return res.status(400).json({ error: error.message });
-//     }
-
-//     console.log("✅ Signup Success:", data);
-//     res.status(201).json({ message: 'Signup successful', user: data.user });
-
-//   } catch (err) {
-//     console.error("🔥 Unexpected Error:", err);
-//     res.status(500).json({ error: "Internal Server Error" });
-//   }
-// });
 router.post('/signup', async (req, res) => {
   const { name, email, password } = req.body;
 

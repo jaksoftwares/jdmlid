@@ -28,7 +28,9 @@ const UsersPage = () => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
-      const res = await fetch("http://localhost:5000/users");
+      // Adjust to fetch from your new API
+      const res = await fetch("/api/users"); // Assuming the API is hosted at '/api/users'
+      if (!res.ok) throw new Error("Error fetching users");
       return res.json();
     },
     staleTime: 10 * 60 * 1000,
@@ -39,11 +41,13 @@ const UsersPage = () => {
   // ✅ Update user mutation
   const updateUser = useMutation({
     mutationFn: async (updatedUser: User) => {
-      await fetch(`http://localhost:5000/users/${updatedUser.id}`, {
+      // Adjust the API endpoint to match your backend route
+      const res = await fetch(`/api/users/${updatedUser.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedUser),
       });
+      if (!res.ok) throw new Error("Error updating user");
     },
     onSuccess: (_, updatedUser) => {
       queryClient.setQueryData(["users"], (prevUsers: User[] | undefined) =>
@@ -57,7 +61,9 @@ const UsersPage = () => {
   // ✅ Delete user mutation
   const deleteUser = useMutation({
     mutationFn: async (userId: string) => {
-      await fetch(`http://localhost:5000/users/${userId}`, { method: "DELETE" });
+      // Adjust the API endpoint to match your backend route
+      const res = await fetch(`/api/users/${userId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Error deleting user");
     },
     onSuccess: (_, userId) => {
       queryClient.setQueryData(["users"], (prevUsers: User[] | undefined) =>

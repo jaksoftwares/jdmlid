@@ -3,20 +3,21 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FaArrowLeft, FaIdCard, FaMapMarkerAlt, FaCheckCircle } from "react-icons/fa";
 import api from "@/utils/api";
-import { LostID } from "@/types/types"
+import { LostID } from "@/types/types";
 
 const LostIDDetails = () => {
   const params = useParams(); // Get dynamic route params
   const router = useRouter();
   const id = params.id as string; // Ensure ID is a string
 
-  // Use the LostID type for the state variable
   const [idDetails, setIdDetails] = useState<LostID | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
+
+    console.log("Fetching details for ID:", id);
 
     const fetchIdDetails = async () => {
       try {
@@ -49,6 +50,7 @@ const LostIDDetails = () => {
         <button
           onClick={() => router.push("/lost-ids")}
           className="bg-jkuatGreen text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+          aria-label="Back to lost ID listings"
         >
           Back to Listings
         </button>
@@ -63,6 +65,7 @@ const LostIDDetails = () => {
         <button
           onClick={() => router.push("/lost-ids")}
           className="flex items-center text-jkuatGreen hover:text-green-600 font-semibold"
+          aria-label="Back to lost ID listings"
         >
           <FaArrowLeft className="mr-2" /> Back to Listings
         </button>
@@ -86,7 +89,9 @@ const LostIDDetails = () => {
 
         <div className="mt-6 border-t pt-4">
           <h3 className="text-xl font-semibold text-gray-700">Date Found:</h3>
-          <p className="text-gray-600 mt-2">{idDetails.date_found}</p>
+          <p className="text-gray-600 mt-2">
+            {new Date(idDetails.date_found).toLocaleDateString()}
+          </p>
         </div>
 
         {/* Claim ID Button */}
@@ -94,6 +99,7 @@ const LostIDDetails = () => {
           <button
             onClick={() => router.push(`/claim-id/${idDetails.id}`)}
             className="inline-flex items-center bg-jkuatYellow text-jkuatGreen px-6 py-3 rounded-lg font-semibold hover:bg-yellow-500 transition"
+            aria-label="Claim this ID"
           >
             <FaCheckCircle className="mr-2" /> Claim ID
           </button>

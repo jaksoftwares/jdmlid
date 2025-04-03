@@ -31,4 +31,32 @@ export interface LostID {
     status: string;
     created_at: string; // Consider using Date if you want to handle date objects
   }
-  
+  // =============================
+// ✅ USER TYPE
+// =============================
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// =============================
+// ✅ CLAIM TYPE
+// =============================
+export interface Claim {
+  id: string;
+  lost_id: string;
+  user_id: string;
+  category_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  comments: string;
+  payment_status: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
