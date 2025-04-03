@@ -36,28 +36,28 @@ let cachedLostIDs: LostID[] | null = null;
 let lastLostIDFetch = 0;
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
-const fetchLostIDs = async (forceRefresh = false): Promise<LostID[]> => {
+const fetchLostIDs = async (): Promise<LostID[]> => {
     const now = Date.now();
-    if (!forceRefresh && cachedLostIDs && now - lastLostIDFetch < CACHE_DURATION) {
-        console.log("Returning cached Lost IDs...");
-        return cachedLostIDs;
+    if (cachedLostIDs && now - lastLostIDFetch < CACHE_DURATION) {
+      console.log("Returning cached Lost IDs...");
+      return cachedLostIDs;
     }
-
+  
     try {
-        console.log("Fetching Lost IDs from API...");
-        const response = await fetch(LOST_ID_URL);
-        const data = await handleResponse<LostID[]>(response);
-
-        // Cache result
-        cachedLostIDs = data;
-        lastLostIDFetch = now;
-
-        return data;
+      console.log("Fetching Lost IDs from API...");
+      const response = await fetch(LOST_ID_URL);
+      const data = await handleResponse<LostID[]>(response);
+  
+      // Cache result
+      cachedLostIDs = data;
+      lastLostIDFetch = now;
+  
+      return data;
     } catch (error) {
-        console.error("Error fetching Lost IDs:", error);
-        return [];
+      console.error("Error fetching Lost IDs:", error);
+      throw new Error("Failed to fetch Lost IDs.");
     }
-};
+  };
 
 const fetchLostIDById = async (id: string): Promise<LostID> => {
     try {

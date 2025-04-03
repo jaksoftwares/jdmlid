@@ -1,4 +1,5 @@
-"use client";
+// LostIDsPage.tsx
+
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/utils/api";
@@ -17,10 +18,10 @@ const LostIDsPage = () => {
   const queryClient = useQueryClient();
 
   // ✅ Use React Query to fetch and cache Lost IDs
-  const { data: lostIDs = [], isLoading, isError } = useQuery({
+  const { data: lostIDs = [], isLoading, isError } = useQuery<LostID[], Error>({
     queryKey: ["lostIDs"], 
-    queryFn: api.fetchLostIDs,
-    staleTime: 10 * 60 * 1000, // Cache data for 10 minutes
+    queryFn: api.fetchLostIDs,  
+    staleTime: 10 * 60 * 1000,  
   });
 
   return (
