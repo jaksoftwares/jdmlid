@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -6,18 +6,38 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+const isValidUUID = (uuid: string) =>
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!isValidUUID(id)) {
+    return NextResponse.json(
+      { error: "Invalid ID format" },
+      { status: 400 }
+    );
+  }
+
   try {
     const { data, error } = await supabase
       .from("lost_ids")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
-    if (error) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(data);
-    
-  } catch (error) {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return error || !data 
+      ? NextResponse.json({ error: "Not found" }, { status: 404 })
+      : NextResponse.json(data, { status: 200 });
+      
+  } catch (err) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }
