@@ -8,23 +8,25 @@ const supabase = createClient(
 );
 
 // API Route Handler
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest) {
   try {
-    const { id } = params;
+    // Extract 'id' from the URL pathname
+    const url = new URL(req.nextUrl);
+    const id = url.pathname.split("/").pop(); // Get the last segment of the URL
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
+    }
 
     // Fetch lost ID record
     const { data, error } = await supabase
       .from("lost_ids")
       .select("*")
       .eq("id", id)
-      .single(); // Ensure a single record is returned
+      .single();
 
     // Handle errors or missing data
     if (error || !data) {
-      console.error("Error fetching lost ID:", error);
       return NextResponse.json({ error: "Lost ID not found" }, { status: 404 });
     }
 
