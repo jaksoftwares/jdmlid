@@ -10,7 +10,7 @@ const isValidUUID = (uuid: string) =>
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
 
 export async function GET(req: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;  // Access the id from the params
+  const { id } = context.params; // Destructure the id from the params
 
   if (!isValidUUID(id)) {
     return NextResponse.json(
@@ -29,7 +29,6 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
     return error || !data 
       ? NextResponse.json({ error: "Not found" }, { status: 404 })
       : NextResponse.json(data, { status: 200 });
-      
   } catch {
     return NextResponse.json(
       { error: "Server error" },
