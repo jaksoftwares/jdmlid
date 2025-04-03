@@ -7,42 +7,41 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
-// GET all users
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const id = req.nextUrl.searchParams.get("id");
 
-    if (error) throw error;
-    return NextResponse.json(users, { status: 200 });
-  } catch (error: unknown) {
-    const errorMessage = (error as Error).message;
-    return NextResponse.json({ error: errorMessage }, { status: 400 });
-  }
-}
+    if (id) {
+      // Fetch a single user by ID
+      const { data: user, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", id)
+        .single();
 
-// GET a single user by ID
-export async function GET_BY_ID(req: NextRequest) {
-  const id = req.nextUrl.searchParams.get('id');
+      if (error) {
+        console.error("Error fetching user:", error);
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
 
-  if (!id) {
-    return NextResponse.json({ error: 'ID is required' }, { status: 400 });
-  }
+      return NextResponse.json(user, { status: 200 });
+    } else {
+      // Fetch all users
+      const { data: users, error } = await supabase
+        .from("users")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-  try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', id)
-      .single();
+      if (error) {
+        console.error("Error fetching users:", error);
+        return NextResponse.json({ error: "Error retrieving users" }, { status: 500 });
+      }
 
-    if (error) throw error;
-    return NextResponse.json(user, { status: 200 });
-  } catch (error: unknown) {
-    const errorMessage = (error as Error).message;
-    return NextResponse.json({ error: errorMessage }, { status: 400 });
+      return NextResponse.json(users, { status: 200 });
+    }
+  } catch (err) {
+    console.error("Error retrieving users:", err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
