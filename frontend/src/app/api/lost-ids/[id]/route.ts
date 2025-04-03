@@ -1,4 +1,3 @@
-// Import required modules
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -12,19 +11,10 @@ const supabase = createClient(
 const isValidUUID = (uuid: string) =>
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
 
-// Update the second argument type to reflect Next.js requirements
-export async function GET(req: NextRequest, { params }: { params: { id: string | string[] } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params;
 
-  // Validate if id is a valid UUID
-  if (Array.isArray(id)) {
-    return NextResponse.json(
-      { error: "Invalid ID format" },
-      { status: 400 }
-    );
-  }
-
-  // Check if ID is valid UUID
+  // Validate if the id is in a valid UUID format
   if (!isValidUUID(id)) {
     return NextResponse.json(
       { error: "Invalid ID format" },
@@ -33,20 +23,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string |
   }
 
   try {
-    // Fetch data from Supabase
+    // Query Supabase for the lost ID details
     const { data, error } = await supabase
       .from("lost_ids")
       .select("*")
       .eq("id", id)
       .single();
 
-    // Check for error or empty data
     if (error || !data) {
       console.error("Error fetching lost ID:", error);
       return NextResponse.json({ error: "Lost ID not found" }, { status: 404 });
     }
 
-    // Return fetched data
     return NextResponse.json(data, { status: 200 });
   } catch (err) {
     console.error("Error retrieving lost ID:", err);
