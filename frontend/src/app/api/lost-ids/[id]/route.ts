@@ -11,7 +11,7 @@ const isValidUUID = (uuid: string) =>
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Record<string, string | string[]> }
+  { params }: { params: { id: string } }
 ) {
   // Handle potential array case (required by Next.js type system)
   const rawId = params.id;
