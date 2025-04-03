@@ -33,8 +33,7 @@ export async function GET(
       ? NextResponse.json({ error: "Not found" }, { status: 404 })
       : NextResponse.json(data, { status: 200 });
       
-  } catch (err) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_) {  // <-- This is the critical fix
     return NextResponse.json(
       { error: "Server error" },
       { status: 500 }
