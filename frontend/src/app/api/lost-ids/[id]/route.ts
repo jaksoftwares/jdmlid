@@ -9,14 +9,17 @@ const supabase = createClient(
 const isValidUUID = (uuid: string) =>
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { [key: string]: string | string[] } }
-) {
+// Corrected type definition for params
+interface RouteParams {
+  params: {
+    id: string;
+  };
+}
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
   const { id } = params;
 
-  // Check if ID is a valid string UUID
-  if (Array.isArray(id) || typeof id !== "string" || !isValidUUID(id)) {
+  if (!isValidUUID(id)) {
     return NextResponse.json(
       { error: "Invalid ID format" },
       { status: 400 }
