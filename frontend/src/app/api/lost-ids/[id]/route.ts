@@ -6,18 +6,12 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
+// Utility function to validate UUID format
 const isValidUUID = (uuid: string) =>
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
 
-// Corrected type definition for params
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
-export async function GET(req: NextRequest, { params }: RouteParams) {
-  const { id } = params;
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
+  const { id } = context.params; // Corrected way to access params
 
   if (!isValidUUID(id)) {
     return NextResponse.json(
