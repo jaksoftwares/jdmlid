@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_ANON_KEY!
 );
 
-// Utility function to validate UUID format
 const isValidUUID = (uuid: string) =>
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { [key: string]: string | string[] } }
+) {
   const { id } = params;
 
-  if (!isValidUUID(id)) {
+  // Check if ID is a valid string UUID
+  if (Array.isArray(id) || typeof id !== "string" || !isValidUUID(id)) {
     return NextResponse.json(
       { error: "Invalid ID format" },
       { status: 400 }
@@ -25,8 +27,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { data, error } = await supabase
       .from("lost_ids")
       .select("*")
-      .eq("id", id) // Search by the UUID 'id'
-      .single(); // Ensure it returns a single result
+      .eq("id", id)
+      .single();
 
     if (error || !data) {
       console.error("Error fetching lost ID:", error);
@@ -36,6 +38,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json(data, { status: 200 });
   } catch (err) {
     console.error("Error retrieving lost ID:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
