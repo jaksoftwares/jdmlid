@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_ANON_KEY!
 );
 
+// Utility function to validate UUID format
 const isValidUUID = (uuid: string) =>
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
 
-// Update the context parameter type to use Record<string, string>
-export async function GET(req: NextRequest, context: { params: { [key: string]: string } }) {
-  const { id } = context.params;
+// The GET function for the API route
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params;
 
+  // Validate UUID
   if (!isValidUUID(id)) {
     return NextResponse.json(
       { error: "Invalid ID format" },
@@ -21,6 +24,7 @@ export async function GET(req: NextRequest, context: { params: { [key: string]: 
   }
 
   try {
+    // Fetch data from Supabase
     const { data, error } = await supabase
       .from("lost_ids")
       .select("*")

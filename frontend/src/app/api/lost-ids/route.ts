@@ -98,45 +98,6 @@ export async function GET() {
   }
 }
 
-// Get a lost ID by ID Number or Owner Name
-// export async function GET_by_id(req: NextRequest) {
-//   try {
-//     const url = new URL(req.url); // Get full URL
-//     const id = url.pathname.split('/').pop(); // Extract ID from URL
-
-//     if (!id) {
-//       return NextResponse.json({ error: "ID parameter is missing" }, { status: 400 });
-//     }
-
-//     // Log ID to ensure it's correctly extracted
-//     console.log("Fetched ID from URL:", id);
-
-//     // Log the query being sent to Supabase
-//     console.log("Querying for ID:", id);
-
-//     const { data, error } = await supabase
-//       .from("lost_ids")
-//       .select("*")
-//       .eq("id", id) // Check if the id is matching in the database
-//       .single(); // Ensure a single record is returned
-
-//     // Log Supabase response to check data or errors
-//     console.log("Supabase Query Result:", data);
-//     console.log("Supabase Query Error:", error);
-
-//     if (error || !data) {
-//       console.error("Error fetching lost ID:", error);
-//       return NextResponse.json({ error: "Lost ID not found" }, { status: 404 });
-//     }
-
-//     return NextResponse.json(data, { status: 200 });
-//   } catch (err) {
-//     console.error("Error retrieving lost ID:", err);
-//     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-//   }
-// }
-
-
 // Search & Filter Lost IDs
 export async function GET_search(req: NextRequest) {
   try {
