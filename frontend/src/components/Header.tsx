@@ -2,7 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { FiMenu, FiX, FiUser } from "react-icons/fi";
-import { useAuth } from "@/contexts/AuthContext"; // Import useAuth()
+import { useAuth } from "@/contexts/AuthContext"; 
+import Image from "next/image";
 
 const Header = () => {
   const { user, logout } = useAuth(); // Get user and logout function from context
@@ -15,10 +16,17 @@ const Header = () => {
       <div className="container mx-auto flex justify-between items-center px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center">
-          <h1 className="text-2xl font-bold hover:text-jkuatYellow transition duration-300">
-            JKUAT Find My Lost ID
-          </h1>
-        </Link>
+        <Image
+          src="/logo.png"
+          height={8}
+          width={100} 
+          alt="JKUAT Find My Lost ID Logo" 
+          className="h-8 mr-2" // Adjust the size and margin as needed
+        />
+        <h1 className="text-2xl font-bold hover:text-jkuatYellow transition duration-300">
+          JKUAT Find My Lost ID
+        </h1>
+      </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex space-x-6">
