@@ -7,11 +7,8 @@ const supabase = createClient(
 );
 
 // GET: Fetch a specific claim
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function GET(req: NextRequest) {
+  const id = req.nextUrl.pathname.split('/')[3]; // Extract the ID from the URL
 
   const { data, error } = await supabase
     .from('found_ids_claims')
@@ -30,11 +27,8 @@ export async function GET(
 }
 
 // PATCH: Update claim details (optional)
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function PATCH(req: NextRequest) {
+  const id = req.nextUrl.pathname.split('/')[3]; // Extract the ID from the URL
   const updates = await req.json();
 
   const { data, error } = await supabase
