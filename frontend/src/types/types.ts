@@ -1,15 +1,20 @@
 export interface LostID {
-    id: string;
-    id_number: string;
-    owner_name: string;
-    category_id?: string; 
-    category?: string;
-    location_found: string;
-    date_found: string;
-    status: string;
-    contact_info: string;
-    comments: string;
-  }
+  id: string;
+  id_number: string;
+  owner_name: string;
+  category_id: string;  // Ensure it's required here
+  category?: string;     // Optional, if you have a category name
+  location_found: string;
+  date_found: string;
+  status: string;
+  contact_info: string;
+  comments: string;
+}
+
+export type NewLostID = Omit<LostID, 'id'>; 
+
+
+  
   
   export interface Category {
     id: string;

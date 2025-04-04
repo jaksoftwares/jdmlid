@@ -112,19 +112,18 @@ const searchLostIDs = async (query: string): Promise<LostID[]> => {
 };
 
 // 📤 Upload Lost ID
-type NewLostID = Omit<LostID, "id">;
+type NewLostID = Omit<LostID, "id" | "id_categories">; 
 
+// In api.ts: The backend expects category_id as a string
 const uploadLostID = async (lostIDData: NewLostID): Promise<LostID | { message: string; error: string }> => {
     try {
         const response = await fetch(`${LOST_ID_URL}/upload`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(lostIDData),
+            body: JSON.stringify(lostIDData), // Ensure lostIDData has category_id as a string
         });
 
         const data = await response.json();
-
-        console.log("Server Response:", data);
 
         if (response.ok) {
             return data.lostId || { message: "Failed to upload Lost ID", error: "Unexpected data format" };

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Modal from "../components/Modal";
 import api from "@/utils/api";
-import { LostID, Category } from "@/types/types";
+import { LostID, NewLostID, Category } from "@/types/types";  // Ensure NewLostID is imported
 
 interface AddLostIDProps {
   isOpen: boolean;
@@ -13,7 +13,6 @@ interface AddLostIDProps {
 const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
   const queryClient = useQueryClient();
 
-  // Ensure all fields are present in the initial state, including category_id
   const [newLostID, setNewLostID] = useState<LostID>({
     id: "", 
     id_number: "",
@@ -29,7 +28,6 @@ const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // Fetch categories when the component mounts
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -48,36 +46,32 @@ const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
   }, []);
 
   const mutation = useMutation({
-    mutationFn: async (lostID: LostID) => {
+    mutationFn: async (lostID: NewLostID) => {
       setIsUploading(true);
-      return await api.uploadLostID(lostID); // Upload Lost ID object directly
+      return await api.uploadLostID(lostID); // Upload NewLostID object
     },
     onSuccess: (response) => {
       setIsUploading(false);
-      if ('error' in response) { // Check if the response contains an error
+      if ('error' in response) {
         alert(`Error: ${response.error || "Something went wrong"}`);
       } else {
         alert("Lost ID added successfully!");
-
-        onAdd(response); // Handle adding the new Lost ID
-
+        onAdd(response);
         queryClient.setQueryData(["lostIDs"], (prev: LostID[] | undefined) =>
           prev ? [...prev, response] : [response]
         );
-
-        // Reset form
         setNewLostID({
           id: "",
           id_number: "",
           owner_name: "",
-          category_id: "", // Reset category_id
+          category_id: "",
           location_found: "",
           date_found: "",
           status: "Pending",
           contact_info: "",
           comments: "",
         });
-        onClose();  // Close the modal
+        onClose();
       }
     },
     onError: (error) => {
@@ -86,34 +80,46 @@ const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
       setIsUploading(false);
     },
   });
+  
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setNewLostID((prev) => ({
-      ...prev,
-      [name as keyof typeof newLostID]: value,
-    }));
+    if (name === "category_id") {
+      setNewLostID((prev) => ({
+        ...prev,
+        category_id: value,  // Store selected category ID
+      }));
+    } else {
+      setNewLostID((prev) => ({
+        ...prev,
+        [name as keyof typeof newLostID]: value,
+      }));
+    }
   };
 
   const handleAddLostID = async () => {
+    // Ensure all required fields are filled
     if (
       !newLostID.id_number ||
       !newLostID.owner_name ||
-      !newLostID.category_id || // Ensure category_id is filled
+      !newLostID.category_id ||  // category_id is required
       !newLostID.location_found ||
       !newLostID.date_found
     ) {
       alert("All fields except comments are required.");
       return;
     }
-
+  
     try {
-      mutation.mutate(newLostID); // Submit the Lost ID object
+      // Pass newLostID directly to the mutation
+      mutation.mutate(newLostID);  // Submit the NewLostID object
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       alert("Failed to upload Lost ID. Please try again.");
     }
   };
+  
+  
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Lost ID">
