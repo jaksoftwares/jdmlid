@@ -40,9 +40,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Payment not found or not completed' }, { status: 400 });
     }
 
-    // ✅ Step 2: Insert claim into database
+    // ✅ Step 2: Check if the claim already exists
+    const { data: existingClaim, error: claimCheckError } = await supabase
+      .from('found_ids_claims')
+      .select('id')
+      .eq('lost_id', lost_id)
+      .eq('user_id', user_id)
+      .single();
+
+    if (claimCheckError) throw claimCheckError;
+    if (existingClaim) {
+      return NextResponse.json({ error: 'Claim for this ID already exists' }, { status: 400 });
+    }
+
+    // ✅ Step 3: Insert claim into database
     const { data: claim, error: claimError } = await supabase
-      .from('claims')
+      .from('found_ids_claims')
       .insert([
         {
           lost_id,
@@ -53,8 +66,7 @@ export async function POST(req: NextRequest) {
           phone,
           comments,
           payment_status: 'paid',
-          status: 'pending',
-          created_at: new Date().toISOString(),
+          status: 'pending', // Default status
         },
       ])
       .select()

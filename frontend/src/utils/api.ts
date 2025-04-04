@@ -18,6 +18,11 @@ interface LostID {
     status: string;
     contact_info: string;
     comments: string;
+    category_id: string;
+    id_categories: {
+      name: string;
+      recovery_fee: number;
+  };
 }
 
 // ✅ Reusable API Fetch Helper with Generic Type
@@ -174,6 +179,20 @@ const fetchIDCategories = async (): Promise<Category[]> => {
     }
 };
 
+// Fetch category by ID
+const fetchCategoryById = async (categoryId: string): Promise<Category> => {
+    try {
+        const response = await fetch(`${CATEGORY_URL}/${categoryId}`);
+        if (!response.ok) {
+            throw new Error("Category not found");
+        }
+        return await handleResponse<Category>(response); // Assuming handleResponse handles JSON parsing and error handling
+    } catch (error) {
+        console.error("Error fetching category by ID:", error);
+        throw error; // Re-throw the error to be caught in the component
+    }
+}
+
 // ➕ Add a new category
 const addCategory = async (newCategory: { name: string; recovery_fee: number }): Promise<Category> => {
     try {
@@ -290,10 +309,11 @@ const deleteUser = async (id: string): Promise<{ message: string }> => {
 // =============================
 
 // 🔄 Fetch all claims
-const fetchClaims = async (): Promise<Claim[]> => {
+export const fetchClaims = async (status?: string): Promise<Claim[]> => {
     try {
         console.log("Fetching Claims...");
-        const response = await fetch(`${BASE_URL}/claims`);
+        const url = status ? `${BASE_URL}/claims?status=${status}` : `${BASE_URL}/claims`;
+        const response = await fetch(url);
         return await handleResponse(response);
     } catch (error) {
         console.error("Error fetching claims:", error);
@@ -302,18 +322,21 @@ const fetchClaims = async (): Promise<Claim[]> => {
 };
 
 // 🔍 Fetch claim by ID
-const fetchClaimById = async (id: string): Promise<Claim> => {
+export const fetchClaimById = async (id: string): Promise<Claim | null> => {
     try {
         const response = await fetch(`${BASE_URL}/claims/${id}`);
+        if (response.status === 404) {
+            return null; // Return null if claim is not found
+        }
         return await handleResponse(response);
     } catch (error) {
         console.error("Error fetching claim by ID:", error);
-        throw error;
+        throw error; // Rethrow error to handle it upstream
     }
 };
 
 // ➕ Submit a new claim
-const submitClaim = async (claimData: {
+export const submitClaim = async (claimData: {
     lost_id: string;
     user_id: string;
     category_id: string;
@@ -333,12 +356,12 @@ const submitClaim = async (claimData: {
         return await handleResponse(response);
     } catch (error) {
         console.error("Error submitting claim:", error);
-        throw error;
+        throw error; // Rethrow error to handle it upstream
     }
 };
 
 // ✏️ Update a claim
-const updateClaim = async (id: string, updateData: Partial<Claim>): Promise<Claim> => {
+export const updateClaim = async (id: string, updateData: Partial<Claim>): Promise<Claim> => {
     try {
         const response = await fetch(`${BASE_URL}/claims/${id}`, {
             method: "PUT",
@@ -348,18 +371,21 @@ const updateClaim = async (id: string, updateData: Partial<Claim>): Promise<Clai
         return await handleResponse(response);
     } catch (error) {
         console.error("Error updating claim:", error);
-        throw error;
+        throw error; // Rethrow error to handle it upstream
     }
 };
 
 // 🗑 Delete a claim
-const deleteClaim = async (id: string): Promise<{ message: string }> => {
+export const deleteClaim = async (id: string): Promise<{ message: string }> => {
     try {
         const response = await fetch(`${BASE_URL}/claims/${id}`, { method: "DELETE" });
+        if (response.status === 404) {
+            throw new Error("Claim not found");
+        }
         return await handleResponse(response);
     } catch (error) {
         console.error("Error deleting claim:", error);
-        throw error;
+        throw error; // Rethrow error to handle it upstream
     }
 };
 
@@ -378,6 +404,7 @@ const api = {
 
     // Category Functions
     fetchIDCategories,
+    fetchCategoryById,
     addCategory,
     updateCategory,
     deleteCategory,

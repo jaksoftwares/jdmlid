@@ -88,7 +88,15 @@ export async function GET(req: NextRequest) {
     const query = url.searchParams.get("query"); // Extract 'query' param
     const category = url.searchParams.get("category"); // Extract 'category' param
 
-    let request = supabase.from("lost_ids").select("*");
+    let request = supabase
+  .from("lost_ids")
+  .select(`
+    *,
+    id_categories (
+      name,
+      recovery_fee
+    )
+  `)
 
     // Apply search filtering if 'query' is present
     if (query) {

@@ -1,32 +1,27 @@
 "use client";
+
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useState, useEffect } from "react";
 import { FaArrowLeft, FaCheckCircle, FaIdCard, FaInfoCircle, FaMoneyBillWave } from "react-icons/fa";
+import api from "@/utils/api";
+import { LostID, Category, ClaimFormData } from "@/types/types";
 
-interface LostID {
-  id: string;
-  category_id: string;
-  name: string;
+type IDetails = {
+  owner_name: string;
   category: string;
-  location: string;
-}
-
-// Simulated lost ID data
-const lostIDs: LostID[] = [
-  { id: "1", category_id: "101", name: "John Doe", category: "School ID", location: "JKUAT Library" },
-  { id: "2", category_id: "102", name: "Jane Smith", category: "National ID", location: "Gate C Security" },
-];
+  location_found: string;
+  category_price: number;
+};
 
 const ClaimIDPage: React.FC = () => {
-  const params = useParams();
-  const id = params.id as string;
+  const { id } = useParams();
+  const safeId = Array.isArray(id) ? id[0] : id; // Handle case where id could be an array
   const router = useRouter();
 
-  const [idDetails, setIdDetails] = useState<LostID | null>(null);
-  const [formData, setFormData] = useState({
-    lost_id: id || "", // Prefilled Lost ID UUID
-    category_id: "", // Prefilled Category ID
+  const [idDetails, setIdDetails] = useState<IDetails | null>(null);
+  const [formData, setFormData] = useState<ClaimFormData>({
+    lost_id: safeId || "", // Ensure safeId is not empty or undefined
+    category_id: "",
     name: "",
     email: "",
     phone: "",
@@ -36,30 +31,64 @@ const ClaimIDPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      const foundID = lostIDs.find((item) => item.id === id);
-      if (foundID) {
-        setIdDetails(foundID);
-        setFormData((prev) => ({
-          ...prev,
-          lost_id: foundID.id,
-          category_id: foundID.category_id,
+    if (!safeId) return; // Early return if safeId is not defined
+  
+    const fetchIdDetails = async () => {
+      try {
+        if (typeof safeId !== 'string') {
+          throw new Error('Invalid ID');
+        }
+  
+        // Fetch the lost ID details by its ID
+        const response: LostID = await api.fetchLostIDById(safeId);
+  
+        // Ensure category_id is a string before passing it
+        const categoryId = typeof response.category_id === 'string' ? response.category_id : "";
+  
+        // Fetch the category details (including price) using the category ID
+        const categoryResponse: Category = await api.fetchCategoryById(categoryId);
+  
+        // Combine lost ID and category details
+        const idDetails: IDetails = {
+          owner_name: response.owner_name,
+          category: categoryResponse.name || "Uncategorized",
+          location_found: response.location_found,
+          category_price: categoryResponse.price || 200, // Default to 200 if price is missing
+        };
+  
+        // Update the form data with the necessary info
+        setFormData((prevData: ClaimFormData) => ({
+          ...prevData,
+          lost_id: response.id,
+          category_id: categoryId,
         }));
+  
+        setIdDetails(idDetails);
+      } catch (err) {
+        console.error("Error fetching ID details:", err);
       }
-    }
-  }, [id]);
+    };
+  
+    fetchIdDetails();
+  }, [safeId]);
+  
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handlePayment = () => {
-    const paymentUrl = `/payment?lost_id=${formData.lost_id}&category_id=${formData.category_id}&amount=200`;
+    if (!idDetails) return; // Ensure idDetails is available before proceeding
+    const paymentUrl = `/payment?lost_id=${formData.lost_id}&category_id=${formData.category_id}&amount=${idDetails.category_price}`;
     router.push(paymentUrl);
   };
 
   const handleSubmit = async () => {
-    if (!isPaid) return alert("Please complete the payment first!");
+    if (!isPaid) {
+      alert("Please complete the payment first!");
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/claims/submit`, {
@@ -69,9 +98,9 @@ const ClaimIDPage: React.FC = () => {
       });
 
       if (!response.ok) throw new Error("Failed to submit claim.");
-      
+
       alert("Claim submitted successfully!");
-      router.push("/"); 
+      router.push("/");
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       alert("Error submitting claim. Try again.");
@@ -85,9 +114,12 @@ const ClaimIDPage: React.FC = () => {
       <main className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900">
         <FaInfoCircle className="text-5xl text-red-500 mb-4" />
         <p className="text-lg text-gray-600 mb-4">ID not found.</p>
-        <Link href="/lost-ids" className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition">
+        <button
+          onClick={() => router.push("/lost-ids")}
+          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+        >
           Back to Lost IDs
-        </Link>
+        </button>
       </main>
     );
   }
@@ -103,23 +135,22 @@ const ClaimIDPage: React.FC = () => {
       <section className="max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-lg">
         <div className="text-center">
           <FaIdCard className="text-5xl text-green-600 mx-auto mb-4" />
-          <h2 className="text-3xl font-bold text-green-600">{idDetails.name}</h2>
+          <h2 className="text-3xl font-bold text-green-600">{idDetails.owner_name}</h2>
           <p className="text-gray-600 text-lg">{idDetails.category}</p>
         </div>
 
         <div className="mt-6 border-t pt-4">
           <h3 className="text-xl font-semibold text-gray-700">Location Found:</h3>
-          <p className="text-gray-600 mt-1">{idDetails.location}</p>
+          <p className="text-gray-600 mt-1">{idDetails.location_found}</p>
         </div>
 
         <div className="mt-6 border-t pt-4 text-center text-yellow-600 font-semibold">
-          <p>⚠️ A service fee of <span className="text-red-500">KES 200</span> is required to claim this ID.</p>
+          <p>⚠️ A service fee of <span className="text-red-500">KES {idDetails.category_price}</span> is required to claim this ID.</p>
         </div>
 
         <form className="mt-6 border-t pt-4 space-y-4">
           <h3 className="text-xl font-semibold text-gray-700">Claim Form:</h3>
 
-          {/* Prefilled Hidden Fields */}
           <input type="hidden" name="lost_id" value={formData.lost_id} />
           <input type="hidden" name="category_id" value={formData.category_id} />
 
@@ -165,12 +196,12 @@ const ClaimIDPage: React.FC = () => {
 
         <div className="mt-8 text-center space-y-4">
           {!isPaid ? (
-        <button
-        onClick={handlePayment}
-        className="inline-flex items-center bg-yellow-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition"
-      >
-        <FaMoneyBillWave className="mr-2" /> Pay KES 200 & Proceed
-      </button>
+            <button
+              onClick={handlePayment}
+              className="inline-flex items-center bg-yellow-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition"
+            >
+              <FaMoneyBillWave className="mr-2" /> Pay KES {idDetails.category_price} & Proceed
+            </button>
           ) : (
             <button
               onClick={handleSubmit}

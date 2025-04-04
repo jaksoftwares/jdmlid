@@ -97,7 +97,7 @@ const LostIDDetails = () => {
         {/* Claim ID Button */}
         <div className="mt-8 text-center">
           <button
-            onClick={() => router.push(`/claim-id/${idDetails.id}`)}
+            onClick={() => router.push(`/claim-id/${idDetails.id}`)} // Navigate to claim page of that specific ID
             className="inline-flex items-center bg-jkuatYellow text-jkuatGreen px-6 py-3 rounded-lg font-semibold hover:bg-yellow-500 transition"
             aria-label="Claim this ID"
           >

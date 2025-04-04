@@ -3,6 +3,7 @@ export interface LostID {
     id_number: string;
     owner_name: string;
     category_id?: string; 
+    category?: string;
     location_found: string;
     date_found: string;
     status: string;
@@ -11,6 +12,7 @@ export interface LostID {
   }
   
   export interface Category {
+    price: number;
     id: string;
     name: string;
     created_at: string;
@@ -60,3 +62,19 @@ export interface Claim {
   created_at: string;
   updated_at: string;
 }
+
+
+export interface IDetails  {
+  owner_name: string;
+  category: string;
+  location_found: string;
+};
+
+export interface ClaimFormData  {
+  lost_id: string;
+  category_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  comments: string;
+};
