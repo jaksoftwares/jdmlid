@@ -12,7 +12,6 @@ export interface LostID {
   }
   
   export interface Category {
-    price: number;
     id: string;
     name: string;
     created_at: string;

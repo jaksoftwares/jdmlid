@@ -53,7 +53,7 @@ const ClaimIDPage: React.FC = () => {
           owner_name: response.owner_name,
           category: categoryResponse.name || "Uncategorized",
           location_found: response.location_found,
-          category_price: categoryResponse.price || 200, // Default to 200 if price is missing
+          category_price: categoryResponse.recovery_fee || 200, // Default to 200 if price is missing
         };
   
         // Update the form data with the necessary info
