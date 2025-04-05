@@ -15,12 +15,12 @@ type IDetails = {
 
 const ClaimIDPage: React.FC = () => {
   const { id } = useParams();
-  const safeId = Array.isArray(id) ? id[0] : id; // Handle case where id could be an array
+  const safeId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
 
   const [idDetails, setIdDetails] = useState<IDetails | null>(null);
   const [formData, setFormData] = useState<ClaimFormData>({
-    lost_id: safeId || "", // Ensure safeId is not empty or undefined
+    lost_id: safeId || "",
     category_id: "",
     name: "",
     email: "",
@@ -28,57 +28,53 @@ const ClaimIDPage: React.FC = () => {
     comments: "",
   });
   const [isPaid] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
 
   useEffect(() => {
-    if (!safeId) return; // Early return if safeId is not defined
-  
+    if (!safeId) return;
+
     const fetchIdDetails = async () => {
+      setLoading(true);
       try {
         if (typeof safeId !== 'string') {
           throw new Error('Invalid ID');
         }
-  
-        // Fetch the lost ID details by its ID
+
         const response: LostID = await api.fetchLostIDById(safeId);
-  
-        // Ensure category_id is a string before passing it
         const categoryId = typeof response.category_id === 'string' ? response.category_id : "";
-  
-        // Fetch the category details (including price) using the category ID
         const categoryResponse: Category = await api.fetchCategoryById(categoryId);
-  
-        // Combine lost ID and category details
+
         const idDetails: IDetails = {
           owner_name: response.owner_name,
           category: categoryResponse.name || "Uncategorized",
           location_found: response.location_found,
-          category_price: categoryResponse.recovery_fee || 200, // Default to 200 if price is missing
+          category_price: categoryResponse.recovery_fee || 200,
         };
-  
-        // Update the form data with the necessary info
+
         setFormData((prevData: ClaimFormData) => ({
           ...prevData,
           lost_id: response.id,
           category_id: categoryId,
         }));
-  
+
         setIdDetails(idDetails);
       } catch (err) {
         console.error("Error fetching ID details:", err);
+        setIdDetails(null);
+      } finally {
+        setLoading(false); // Always stop loading
       }
     };
-  
+
     fetchIdDetails();
   }, [safeId]);
-  
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handlePayment = () => {
-    if (!idDetails) return; // Ensure idDetails is available before proceeding
+    if (!idDetails) return;
     const paymentUrl = `/payment?lost_id=${formData.lost_id}&category_id=${formData.category_id}&amount=${idDetails.category_price}`;
     router.push(paymentUrl);
   };
@@ -109,6 +105,16 @@ const ClaimIDPage: React.FC = () => {
     }
   };
 
+  // ✅ Show loading state while fetching
+  if (loading) {
+    return (
+      <main className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900">
+        <p className="text-lg text-gray-600 mb-4">Loading ID details...</p>
+      </main>
+    );
+  }
+
+  // ✅ Show 'ID not found' only after loading is false
   if (!idDetails) {
     return (
       <main className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900">
