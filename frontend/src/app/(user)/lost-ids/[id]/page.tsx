@@ -70,7 +70,7 @@ const LostIDDetails = () => {
           <FaArrowLeft className="mr-2" /> Back to Listings
         </button>
       </div>
-
+  
       {/* ID Details Card */}
       <section className="max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-lg">
         <div className="text-center">
@@ -78,7 +78,7 @@ const LostIDDetails = () => {
           <h2 className="text-3xl font-bold text-jkuatGreen">{idDetails.owner_name}</h2>
           <p className="text-gray-600 text-lg">{idDetails.status}</p>
         </div>
-
+  
         <div className="mt-6 border-t pt-4">
           <h3 className="text-xl font-semibold text-gray-700">Found At:</h3>
           <p className="flex items-center text-gray-600 mt-1">
@@ -86,14 +86,22 @@ const LostIDDetails = () => {
             {idDetails.location_found}
           </p>
         </div>
-
+  
         <div className="mt-6 border-t pt-4">
           <h3 className="text-xl font-semibold text-gray-700">Date Found:</h3>
           <p className="text-gray-600 mt-2">
             {new Date(idDetails.date_found).toLocaleDateString()}
           </p>
         </div>
-
+  
+        {/* Blurred ID Number Section */}
+        <div className="mt-6 border-t pt-4">
+          <h3 className="text-xl font-semibold text-gray-700">ID Number:</h3>
+          <p className="text-gray-600 mt-1">
+            <span className="blur-sm">{idDetails.id_number}</span>
+          </p>
+        </div>
+  
         {/* Claim ID Button */}
         <div className="mt-8 text-center">
           <button
@@ -107,6 +115,7 @@ const LostIDDetails = () => {
       </section>
     </main>
   );
+  
 };
 
 export default LostIDDetails;

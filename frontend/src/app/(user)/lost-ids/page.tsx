@@ -156,8 +156,12 @@ const LostIDs = () => {
                       key={id.id}
                       className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition"
                     >
-                      <h3 className="text-xl font-semibold text-jkuatGreen">{id.owner_name}</h3>
-                      <p className="text-gray-600 mt-1">ID Number: {id.id_number}</p>
+                      <h3 className="text-xl font-semibold text-jkuatGreen">
+                        Name: <span className=" inline-block">{id.owner_name}</span>
+                      </h3>
+                      <p className="text-gray-600 mt-1">
+                        ID Number: <span className="blur-sm inline-block">{id.id_number}</span>
+                      </p>
                       <p className="text-gray-500 text-sm mt-1">Found at: {id.location_found}</p>
                       <p className="text-gray-500 text-sm mt-1">Date: {id.date_found}</p>
                       <Link
@@ -171,6 +175,7 @@ const LostIDs = () => {
                 </div>
               </div>
             );
+            
           })}
         </section>
       )}
