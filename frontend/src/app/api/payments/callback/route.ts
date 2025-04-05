@@ -6,50 +6,81 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
+interface MpesaCallbackItem {
+  Name: string;
+  Value: string | number;
+}
+
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  try {
+    const json = await req.json();
 
-  // Extract necessary fields from MPESA callback
-  const {
-    CheckoutRequestID,
-    ResultCode,
-    ResultDesc,
-    TransactionDate,
-    PhoneNumber,
-  } = body;
+    const callback = json?.Body?.stkCallback;
 
-  if (ResultCode !== 0) {
-    // Payment failed
-    return NextResponse.json(
-      { error: 'Payment failed', details: ResultDesc },
-      { status: 400 }
-    );
+    if (!callback) {
+      return NextResponse.json({ error: 'Invalid MPESA callback structure' }, { status: 400 });
+    }
+
+    const {
+      CheckoutRequestID,
+      ResultCode,
+      ResultDesc,
+      CallbackMetadata,
+    } = callback;
+
+    if (ResultCode !== 0) {
+      return NextResponse.json(
+        { error: 'Payment failed', description: ResultDesc },
+        { status: 400 }
+      );
+    }
+
+    let phone: string | null = null;
+    let transactionDate: number | null = null;
+    let mpesaReceiptNumber: string | null = null;
+
+    (CallbackMetadata?.Item || []).forEach((item: MpesaCallbackItem) => {
+      if (item.Name === "PhoneNumber") phone = String(item.Value);
+      if (item.Name === "TransactionDate") transactionDate = Number(item.Value);
+      if (item.Name === "MpesaReceiptNumber") mpesaReceiptNumber = String(item.Value);
+    });
+
+    const { data: payment } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('transaction_id', CheckoutRequestID)
+      .single();
+
+    if (!payment) {
+      return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
+    }
+
+    const parsedDate = transactionDate
+      ? new Date(
+          `${transactionDate}`.replace(
+            /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/,
+            '$1-$2-$3T$4:$5:$6'
+          )
+        )
+      : new Date();
+
+    const { error } = await supabase
+      .from('payments')
+      .update({
+        payment_status: 'completed',
+        transaction_date: parsedDate,
+        phone,
+        transaction_id: mpesaReceiptNumber || CheckoutRequestID,
+      })
+      .eq('id', payment.id);
+
+    if (error) {
+      return NextResponse.json({ error: 'Failed to update payment' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, message: 'Payment updated successfully' });
+  } catch (err) {
+    console.error('MPESA callback error:', err);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-
-  // Find the payment in the database
-  const { data: payment } = await supabase
-    .from('payments')
-    .select('*')
-    .eq('transaction_id', CheckoutRequestID)
-    .single();
-
-  if (!payment) {
-    return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
-  }
-
-  // Update payment status to 'completed'
-  const { error } = await supabase
-    .from('payments')
-    .update({
-      payment_status: 'completed',
-      transaction_date: new Date(TransactionDate),
-      phone: PhoneNumber,
-    })
-    .eq('id', payment.id);
-
-  if (error) {
-    return NextResponse.json({ error: 'Failed to update payment status' }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true, message: 'Payment successful' });
 }

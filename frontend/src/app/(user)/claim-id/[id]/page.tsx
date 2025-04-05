@@ -29,6 +29,7 @@ const ClaimIDPage: React.FC = () => {
   });
   const [isPaid] = useState(false);
   const [loading, setLoading] = useState(true); // Start with loading true
+  const [formError, setFormError] = useState<string | null>(null); // For form validation
 
   useEffect(() => {
     if (!safeId) return;
@@ -74,6 +75,13 @@ const ClaimIDPage: React.FC = () => {
   };
 
   const handlePayment = () => {
+    // Ensure all required fields are filled before proceeding
+    if (!formData.name || !formData.email || !formData.phone) {
+      setFormError("Please fill in all the required fields.");
+      return;
+    }
+
+    setFormError(null); // Reset any error if the form is valid
     if (!idDetails) return;
     const paymentUrl = `/payment?lost_id=${formData.lost_id}&category_id=${formData.category_id}&amount=${idDetails.category_price}`;
     router.push(paymentUrl);
@@ -198,6 +206,13 @@ const ClaimIDPage: React.FC = () => {
             value={formData.comments}
             onChange={handleChange}
           ></textarea>
+
+          {/* Display error if the form is incomplete */}
+          {formError && (
+            <div className="text-red-500 text-sm mt-2">
+              <p>{formError}</p>
+            </div>
+          )}
         </form>
 
         <div className="mt-8 text-center space-y-4">
