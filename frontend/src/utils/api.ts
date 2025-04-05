@@ -303,6 +303,14 @@ const deleteUser = async (id: string): Promise<{ message: string }> => {
 };
 
 
+export const checkAuthSession = async () => {
+    const response = await fetch('/api/auth');  // API route to check session
+    if (!response.ok) {
+      throw new Error('Session check failed');
+    }
+    return await response.json();  // This will return the session data, or an error
+  };
+
 // =============================
 // ✅ CLAIM FUNCTIONS
 // =============================
@@ -493,6 +501,7 @@ const api = {
     addUser,
     updateUser,
     deleteUser,
+    checkAuthSession,
 
     // Claim Functions
     fetchClaims,

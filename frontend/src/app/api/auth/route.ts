@@ -82,3 +82,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
   }
 }
+
+// Function to check the session
+export async function GET() {
+  try {
+    const { data: session, error } = await supabase.auth.getSession();
+
+    if (error) {
+      return NextResponse.json({ error: "Failed to fetch session." }, { status: 400 });
+    }
+
+    return NextResponse.json({ session }, { status: 200 });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
+  }
+}
