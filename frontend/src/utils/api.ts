@@ -334,7 +334,76 @@ export const fetchClaimById = async (id: string): Promise<Claim | null> => {
     }
 };
 
-// ➕ Submit a new claim
+// API call to initiate payment (start the MPESA STK push)
+export const initiatePayment = async (phone: string, amount: number, lost_id: string, user_id: string) => {
+    try {
+      const response = await fetch('/api/payments/initiate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone, amount, lost_id, user_id }),
+      });
+  
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to initiate payment');
+      }
+  
+      return data; // Return the CheckoutRequestID to frontend
+    } catch (error: unknown) {
+      console.error('Error initiating payment:', error);
+      throw new Error(error instanceof Error ? error.message : 'Something went wrong while initiating payment');
+    }
+  };
+  
+  // API call to handle MPESA callback and update the payment status
+  export const handleMpesaCallback = async (paymentData: unknown) => {
+    try {
+      const response = await fetch('/api/payments/callback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
+  
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to process payment callback');
+      }
+  
+      return data; // Returns success message or error
+    } catch (error: unknown) {
+      console.error('Error processing callback:', error);
+      throw new Error(error instanceof Error ? error.message : 'Something went wrong while processing the callback');
+    }
+  };
+  
+  // API call to submit a claim after confirming payment (Renamed to avoid conflict)
+  export const submitPaymentClaim = async (user_id: string, lost_id: string, payment_id: string) => {
+    try {
+      const response = await fetch('/api/claims/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id, lost_id, payment_id }),
+      });
+  
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit claim');
+      }
+  
+      return data; // Returns success message or error
+    } catch (error: unknown) {
+      console.error('Error submitting claim:', error);
+      throw new Error(error instanceof Error ? error.message : 'Something went wrong while submitting the claim');
+    }
+  };
+
+// ➕ Submit a new claim (Renamed to avoid conflict with the payment-related claim)
 export const submitClaim = async (claimData: {
     lost_id: string;
     user_id: string;
@@ -353,9 +422,9 @@ export const submitClaim = async (claimData: {
             body: JSON.stringify(claimData),
         });
         return await handleResponse(response);
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error submitting claim:", error);
-        throw error; // Rethrow error to handle it upstream
+        throw new Error(error instanceof Error ? error.message : 'Failed to submit claim');
     }
 };
 
@@ -368,9 +437,9 @@ export const updateClaim = async (id: string, updateData: Partial<Claim>): Promi
             body: JSON.stringify(updateData),
         });
         return await handleResponse(response);
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error updating claim:", error);
-        throw error; // Rethrow error to handle it upstream
+        throw new Error(error instanceof Error ? error.message : 'Failed to update claim');
     }
 };
 
@@ -382,11 +451,19 @@ export const deleteClaim = async (id: string): Promise<{ message: string }> => {
             throw new Error("Claim not found");
         }
         return await handleResponse(response);
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error deleting claim:", error);
-        throw error; // Rethrow error to handle it upstream
+        throw new Error(error instanceof Error ? error.message : 'Failed to delete claim');
     }
 };
+
+
+
+
+
+
+
+
 
 
 // =============================
@@ -423,6 +500,10 @@ const api = {
     submitClaim,
     updateClaim,
     deleteClaim,
+
+    //payment
+    initiatePayment,
+    
 };
 
 export default api;
