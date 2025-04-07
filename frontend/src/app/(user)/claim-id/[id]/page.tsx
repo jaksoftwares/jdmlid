@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { FaArrowLeft, FaCheckCircle, FaIdCard, FaInfoCircle, FaMoneyBillWave } from "react-icons/fa";
 import api from "@/utils/api";
 import { LostID, Category, ClaimFormData } from "@/types/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 type IDetails = {
   owner_name: string;
@@ -15,6 +16,7 @@ type IDetails = {
 
 const ClaimIDPage: React.FC = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const safeId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
 
@@ -75,15 +77,21 @@ const ClaimIDPage: React.FC = () => {
   };
 
   const handlePayment = () => {
-    // Ensure all required fields are filled before proceeding
+    if (!user) {
+      router.push(`/auth/login?returnTo=/claim-id/${safeId}`);
+      return;
+    }
+  
     if (!formData.name || !formData.email || !formData.phone) {
       setFormError("Please fill in all the required fields.");
       return;
     }
-
-    setFormError(null); // Reset any error if the form is valid
+  
+    setFormError(null);
     if (!idDetails) return;
-    const paymentUrl = `/payment?lost_id=${formData.lost_id}&category_id=${formData.category_id}&amount=${idDetails.category_price}`;
+  
+    const paymentUrl = `/payment?lost_id=${formData.lost_id}&category_id=${formData.category_id}&amount=${idDetails.category_price}&user_id=${user.id}`;
+  
     router.push(paymentUrl);
   };
 

@@ -1,8 +1,9 @@
 "use client";
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Define User Type
+// User Type
 interface User {
   id: string;
   email: string;
@@ -10,22 +11,20 @@ interface User {
   profilePic?: string;
 }
 
-// Define Auth Context Type
+// Auth Context Type
 interface AuthContextType {
   user: User | null;
   login: (userData: User, token: string) => void;
   logout: () => void;
 }
 
-// Create Context with default values
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Provide AuthContext to the App
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
-  // Load user from localStorage (keeps user logged in)
+  // Load user from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -33,20 +32,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Function to handle login
+  // Handle Login (just set user + token)
   const login = (userData: User, token: string) => {
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", token);
     setUser(userData);
-    router.push("/"); // Redirect after login
+    // No router.push() here
   };
 
-  // Function to handle logout
+  // Handle Logout
   const logout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     setUser(null);
-    router.push("/auth/login"); // Redirect to login page
+    router.push("/"); 
   };
 
   return (
@@ -56,7 +55,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Custom hook for using AuthContext
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

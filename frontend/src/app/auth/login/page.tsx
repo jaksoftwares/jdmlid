@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FaUser, FaLock } from 'react-icons/fa';
 
 const LoginPage = () => {
@@ -10,6 +10,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,11 +18,11 @@ const LoginPage = () => {
     setError('');
 
     try {
-      // Adjust the fetch URL to match your Next.js API endpoint
+      // Send the login request
       const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, action: 'login' }), // Include the "action" parameter
+        body: JSON.stringify({ email, password, action: 'login' }),
       });
 
       const data = await response.json();
@@ -30,7 +31,12 @@ const LoginPage = () => {
         // Save the session and user details to localStorage
         localStorage.setItem('token', data.session.access_token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        router.push('/'); // Redirect to the homepage or another page
+
+        // Get the returnTo URL from the query params
+        const returnTo = searchParams.get('returnTo');
+
+        // Redirect to the returnTo page if available, or to homepage
+        router.push(returnTo || '/');
       } else {
         setError(data.error || 'Login failed. Please try again.');
       }
