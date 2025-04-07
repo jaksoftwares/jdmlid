@@ -345,6 +345,9 @@ export const fetchClaimById = async (id: string): Promise<Claim | null> => {
 // API call to initiate payment (start the MPESA STK push)
 export const initiatePayment = async (phone: string, amount: number, lost_id: string, user_id: string) => {
     try {
+      // Log the request data
+      console.log("Initiating payment with data:", { phone, amount, lost_id, user_id });
+  
       const response = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: {
@@ -353,17 +356,41 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
         body: JSON.stringify({ phone, amount, lost_id, user_id }),
       });
   
+      // Log the raw response status and headers
+      console.log("API response status:", response.status);
+      console.log("API response headers:", response.headers);
+  
       const data = await response.json();
+  
+      // Log the response body
+      console.log("API response body:", data);
+  
+      // Check for successful response
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to initiate payment');
+        // Throw error with the response error message if present
+        const errorMessage = data.error || 'Failed to initiate payment';
+        console.error("Error response:", errorMessage);
+        throw new Error(errorMessage);
       }
   
-      return data; // Return the CheckoutRequestID to frontend
+      // Return the successful response data (CheckoutRequestID)
+      return data; 
     } catch (error: unknown) {
-      console.error('Error initiating payment:', error);
+      // Enhanced logging for the error that occurred
+      console.error("Error initiating payment:", error);
+  
+      // Check if it's a network error or other type of error
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+      } else {
+        console.error("Unknown error occurred");
+      }
+  
+      // Throw the error with a clear message
       throw new Error(error instanceof Error ? error.message : 'Something went wrong while initiating payment');
     }
   };
+  
   
   // API call to handle MPESA callback and update the payment status
   export const handleMpesaCallback = async (paymentData: unknown) => {

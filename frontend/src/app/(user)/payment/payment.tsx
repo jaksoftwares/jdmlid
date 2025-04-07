@@ -24,10 +24,13 @@ const PaymentPage = () => {
       return;
     }
 
+    // Ensure phone number is in the format '254XXXXXXXXX'
+    const formattedPhone = `254${phone.slice(0, 9)}`;
+
     setLoading(true);
 
     try {
-      const response = await api.initiatePayment(phone, amount, lost_id, user_id);
+      const response = await api.initiatePayment(formattedPhone, amount, lost_id, user_id);
 
       if (response.status === 'success') {
         setPaymentStatus('Payment successful. Redirecting to submit claim...');
