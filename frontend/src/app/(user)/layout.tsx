@@ -6,7 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
   title: "JKUAT Find My Lost ID",
-  description: "Helping JKUAT students recover lost identification cards easily.",
+  description: "Helping JKUAT community recover lost identification cards easily.",
 };
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
