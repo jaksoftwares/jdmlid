@@ -134,14 +134,20 @@ const PaymentPage: React.FC = () => {
 
         {selectedMethod === "mpesa" || selectedMethod === "airtel" ? (
           <div className="mt-6">
-            <label className="block text-gray-700 font-semibold mb-2">Mobile Number:</label>
-            <input
-              type="tel"
-              className="w-full px-4 py-3 border rounded-lg focus:ring focus:ring-green-300"
-              value={claimData?.phone}
-              readOnly
-            />
-          </div>
+          <label className="block text-gray-700 font-semibold mb-2">Mobile Number:</label>
+          <input
+            type="tel"
+            className="w-full px-4 py-3 border rounded-lg focus:ring focus:ring-green-300"
+            value={`254${claimData?.phone || ''}`} 
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value.startsWith('254') && claimData) { 
+                claimData.phone = value.slice(3); 
+              }
+            }}
+            placeholder="7xxxxx"
+          />
+        </div>
         ) : null}
 
         {error && <p className="text-red-500 mt-4">{error}</p>}

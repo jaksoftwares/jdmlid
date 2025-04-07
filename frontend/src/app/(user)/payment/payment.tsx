@@ -50,20 +50,20 @@ const PaymentPage = () => {
       <h1 className="text-3xl font-bold text-green-600">Make a Payment</h1>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm mt-8 space-y-4">
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            Phone Number
-          </label>
-          <input
-            id="phone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="mt-2 p-2 w-full border rounded-md"
-            placeholder="Enter phone number"
-            required
-          />
-        </div>
+      <div>
+      <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+        Phone Number
+      </label>
+      <input
+        id="phone"
+        type="tel"
+        value={`254${phone || ''}`} // Ensure '254' is pre-filled, and handle null or undefined phone
+        onChange={(e) => setPhone(e.target.value.slice(3))} // Only update the part after '254'
+        className="mt-2 p-2 w-full border rounded-md"
+        placeholder="Enter phone number"
+        required
+      />
+    </div>
 
         <div>
           <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
