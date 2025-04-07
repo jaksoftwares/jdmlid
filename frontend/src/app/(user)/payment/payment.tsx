@@ -20,7 +20,7 @@ const PaymentPage = () => {
     e.preventDefault();
 
     if (!phone || !amount || !lost_id || !user_id) {
-      alert('Please fill in all fields.');
+      alert('Please ensure all fields are filled, and a valid phone number is entered for Mpesa.');
       return;
     }
 
@@ -47,23 +47,24 @@ const PaymentPage = () => {
 
   return (
     <main className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900">
-      <h1 className="text-3xl font-bold text-green-600">Make a Payment</h1>
+      <h1 className="text-4xl font-bold text-green-600">Make Your Payment</h1>
+      <p className="mt-2 text-sm text-gray-600">Please enter your Mpesa number below to complete the payment process.</p>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-sm mt-8 space-y-4">
-      <div>
-      <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-        Phone Number
-      </label>
-      <input
-        id="phone"
-        type="tel"
-        value={`254${phone || ''}`} // Ensure '254' is pre-filled, and handle null or undefined phone
-        onChange={(e) => setPhone(e.target.value.slice(3))} // Only update the part after '254'
-        className="mt-2 p-2 w-full border rounded-md"
-        placeholder="Enter phone number"
-        required
-      />
-    </div>
+      <form onSubmit={handleSubmit} className="w-full max-w-md mt-8 space-y-6 bg-white p-6 rounded-lg shadow-md">
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+            Mpesa Number (e.g., 2547xxxxxxx)
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            value={`254${phone || ''}`} // Ensure '254' is pre-filled, and handle null or undefined phone
+            onChange={(e) => setPhone(e.target.value.slice(3))} // Only update the part after '254'
+            className="mt-2 p-3 w-full border rounded-md focus:ring focus:ring-green-300 focus:border-green-500"
+            placeholder="Enter phone number"
+            required
+          />
+        </div>
 
         <div>
           <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
@@ -74,20 +75,22 @@ const PaymentPage = () => {
             type="number"
             value={amount}
             readOnly
-            className="mt-2 p-2 w-full border rounded-md bg-gray-100 text-gray-600"
+            className="mt-2 p-3 w-full border rounded-md bg-gray-100 text-gray-600"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+          className="w-full py-3 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 transition disabled:opacity-50"
         >
           {loading ? 'Processing...' : 'Pay Now'}
         </button>
 
         {paymentStatus && (
-          <p className="text-center text-sm text-gray-700 mt-4">{paymentStatus}</p>
+          <p className={`text-center text-sm mt-4 ${paymentStatus.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+            {paymentStatus}
+          </p>
         )}
       </form>
     </main>
