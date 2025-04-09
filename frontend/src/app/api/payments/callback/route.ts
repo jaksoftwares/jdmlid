@@ -45,14 +45,20 @@ export async function POST(req: NextRequest) {
       if (item.Name === "MpesaReceiptNumber") mpesaReceiptNumber = String(item.Value);
     });
 
-    const { data: payment } = await supabase
+    // Retrieve the payment record using the CheckoutRequestID (transaction ID)
+    const { data: payment, error: paymentError } = await supabase
       .from('payments')
       .select('*')
-      .eq('transaction_id', CheckoutRequestID)
+      .eq('checkout_request_id', CheckoutRequestID) 
       .single();
 
-    if (!payment) {
+    if (paymentError || !payment) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
+    }
+
+    // Check if the payment has already been completed to prevent double updating
+    if (payment.payment_status === 'completed') {
+      return NextResponse.json({ success: true, message: 'Payment already completed' });
     }
 
     const parsedDate = transactionDate
@@ -64,7 +70,8 @@ export async function POST(req: NextRequest) {
         )
       : new Date();
 
-    const { error } = await supabase
+    // Update the payment status to 'completed' and save additional info (phone, transaction ID)
+    const { error: updateError } = await supabase
       .from('payments')
       .update({
         payment_status: 'completed',
@@ -74,7 +81,7 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', payment.id);
 
-    if (error) {
+    if (updateError) {
       return NextResponse.json({ error: 'Failed to update payment' }, { status: 500 });
     }
 
