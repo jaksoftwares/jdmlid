@@ -32,6 +32,7 @@ const PaymentPage = () => {
     try {
       const response = await api.initiatePayment(formattedPhone, amount, lost_id, user_id);
 
+      console.log(JSON.stringify(response,null,1))
       if (response.status === 'success') {
         setPaymentStatus('Payment successful. Redirecting to submit claim...');
         setTimeout(() => {

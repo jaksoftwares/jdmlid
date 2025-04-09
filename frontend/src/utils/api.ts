@@ -348,6 +348,7 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
       // Log the request data
       console.log("Initiating payment with data:", { phone, amount, lost_id, user_id });
   
+      // Call the API endpoint to initiate the MPESA payment
       const response = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: {
@@ -356,9 +357,8 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
         body: JSON.stringify({ phone, amount, lost_id, user_id }),
       });
   
-      // Log the raw response status and headers
+      // Log the response status
       console.log("API response status:", response.status);
-      console.log("API response headers:", response.headers);
   
       const data = await response.json();
   
@@ -391,10 +391,10 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
     }
   };
   
-  
   // API call to handle MPESA callback and update the payment status
   export const handleMpesaCallback = async (paymentData: unknown) => {
     try {
+      // Call the callback endpoint to handle MPESA response
       const response = await fetch('/api/payments/callback', {
         method: 'POST',
         headers: {
@@ -404,11 +404,14 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
       });
   
       const data = await response.json();
+      
+      // Check if the callback processing was successful
       if (!response.ok) {
         throw new Error(data.error || 'Failed to process payment callback');
       }
   
-      return data; // Returns success message or error
+      // Return the processed data (success message or updated status)
+      return data;
     } catch (error: unknown) {
       console.error('Error processing callback:', error);
       throw new Error(error instanceof Error ? error.message : 'Something went wrong while processing the callback');
@@ -418,6 +421,7 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
   // API call to submit a claim after confirming payment (Renamed to avoid conflict)
   export const submitPaymentClaim = async (user_id: string, lost_id: string, payment_id: string) => {
     try {
+      // Call the API endpoint to submit a claim after payment confirmation
       const response = await fetch('/api/claims/submit', {
         method: 'POST',
         headers: {
@@ -427,17 +431,20 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
       });
   
       const data = await response.json();
+  
+      // Check if the claim submission was successful
       if (!response.ok) {
         throw new Error(data.error || 'Failed to submit claim');
       }
   
-      return data; // Returns success message or error
+      // Return the success message or data related to the claim submission
+      return data;
     } catch (error: unknown) {
       console.error('Error submitting claim:', error);
       throw new Error(error instanceof Error ? error.message : 'Something went wrong while submitting the claim');
     }
   };
-
+  
 // ➕ Submit a new claim (Renamed to avoid conflict with the payment-related claim)
 export const submitClaim = async (claimData: {
     lost_id: string;
