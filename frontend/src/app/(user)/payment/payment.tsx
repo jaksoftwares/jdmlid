@@ -16,23 +16,33 @@ const PaymentPage = () => {
   const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
 
+  const validatePhoneNumber = (phone: string) => {
+    const phoneRegex = /^254\d{9}$/;
+    return phoneRegex.test(phone);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!phone || !amount || !lost_id || !user_id) {
-      alert('Please ensure all fields are filled, and a valid phone number is entered for Mpesa.');
+      alert('Please ensure all fields are filled correctly.');
       return;
     }
 
-    // Ensure phone number is in the format '254XXXXXXXXX'
+    // Ensure phone number is in the correct format '254XXXXXXXXX'
     const formattedPhone = `254${phone.slice(0, 9)}`;
+
+    if (!validatePhoneNumber(formattedPhone)) {
+      alert('Please enter a valid Kenyan phone number starting with 254.');
+      return;
+    }
 
     setLoading(true);
 
     try {
       const response = await api.initiatePayment(formattedPhone, amount, lost_id, user_id);
 
-      console.log(JSON.stringify(response,null,1))
+      console.log(JSON.stringify(response, null, 1));
       if (response.status === 'success') {
         setPaymentStatus('Payment successful. Redirecting to submit claim...');
         setTimeout(() => {

@@ -13,14 +13,17 @@ interface MpesaCallbackItem {
 
 export async function POST(req: NextRequest) {
   try {
+    // Parse the incoming request JSON
     const json = await req.json();
 
+    // Get the callback body from the response
     const callback = json?.Body?.stkCallback;
 
     if (!callback) {
       return NextResponse.json({ error: 'Invalid MPESA callback structure' }, { status: 400 });
     }
 
+    // Extract relevant fields from the callback
     const {
       CheckoutRequestID,
       ResultCode,
@@ -28,6 +31,7 @@ export async function POST(req: NextRequest) {
       CallbackMetadata,
     } = callback;
 
+    // If payment result code is not successful, return an error response
     if (ResultCode !== 0) {
       return NextResponse.json(
         { error: 'Payment failed', description: ResultDesc },
@@ -39,13 +43,14 @@ export async function POST(req: NextRequest) {
     let transactionDate: number | null = null;
     let mpesaReceiptNumber: string | null = null;
 
+    // Extract additional information from CallbackMetadata
     (CallbackMetadata?.Item || []).forEach((item: MpesaCallbackItem) => {
       if (item.Name === "PhoneNumber") phone = String(item.Value);
       if (item.Name === "TransactionDate") transactionDate = Number(item.Value);
       if (item.Name === "MpesaReceiptNumber") mpesaReceiptNumber = String(item.Value);
     });
 
-    // Retrieve the payment record using the CheckoutRequestID (transaction ID)
+    // Retrieve the payment record using CheckoutRequestID
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
       .select('*')
@@ -56,11 +61,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
 
-    // Check if the payment has already been completed to prevent double updating
+    // Prevent double updating if the payment is already marked as completed
     if (payment.payment_status === 'completed') {
       return NextResponse.json({ success: true, message: 'Payment already completed' });
     }
 
+    // Parse the transaction date into a proper Date object
     const parsedDate = transactionDate
       ? new Date(
           `${transactionDate}`.replace(
@@ -70,7 +76,7 @@ export async function POST(req: NextRequest) {
         )
       : new Date();
 
-    // Update the payment status to 'completed' and save additional info (phone, transaction ID)
+    // Update the payment status in Supabase to 'completed' and save other details
     const { error: updateError } = await supabase
       .from('payments')
       .update({
@@ -81,6 +87,7 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', payment.id);
 
+    // Handle any errors during the update process
     if (updateError) {
       return NextResponse.json({ error: 'Failed to update payment' }, { status: 500 });
     }

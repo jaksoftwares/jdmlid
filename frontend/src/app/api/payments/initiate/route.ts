@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 
     // Send STK Push request to MPESA
     const res = await fetch(
-      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest", 
+      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
       {
         method: "POST",
         headers: {
@@ -120,6 +120,8 @@ export async function POST(req: NextRequest) {
         phone,
         amount,
         checkout_request_id: data.CheckoutRequestID,
+        payment_status: "pending", // Default status before callback
+        method: "mpesa",
       },
     ]);
 
@@ -135,7 +137,6 @@ export async function POST(req: NextRequest) {
       message: "STK Push initiated successfully",
       CheckoutRequestID: data.CheckoutRequestID,
     });
-
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error("Payment Initiation Error:", error.message);

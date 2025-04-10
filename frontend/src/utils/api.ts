@@ -357,12 +357,9 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
         body: JSON.stringify({ phone, amount, lost_id, user_id }),
       });
   
-      // Log the response status
+      // Log the response status and body for debugging
       console.log("API response status:", response.status);
-  
       const data = await response.json();
-  
-      // Log the response body
       console.log("API response body:", data);
   
       // Check for successful response
@@ -374,7 +371,7 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
       }
   
       // Return the successful response data (CheckoutRequestID)
-      return data; 
+      return data;
     } catch (error: unknown) {
       // Enhanced logging for the error that occurred
       console.error("Error initiating payment:", error);
@@ -404,10 +401,12 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
       });
   
       const data = await response.json();
-      
+  
       // Check if the callback processing was successful
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to process payment callback');
+        const errorMessage = data.error || 'Failed to process payment callback';
+        console.error("Error response from callback:", errorMessage);
+        throw new Error(errorMessage);
       }
   
       // Return the processed data (success message or updated status)
@@ -434,7 +433,9 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
   
       // Check if the claim submission was successful
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit claim');
+        const errorMessage = data.error || 'Failed to submit claim';
+        console.error("Error response from claim submission:", errorMessage);
+        throw new Error(errorMessage);
       }
   
       // Return the success message or data related to the claim submission
