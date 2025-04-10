@@ -23,41 +23,61 @@ const PaymentPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
+    // Validate if all required fields are filled
     if (!phone || !amount || !lost_id || !user_id) {
       alert('Please ensure all fields are filled correctly.');
       return;
     }
-
+  
     // Ensure phone number is in the correct format '254XXXXXXXXX'
     const formattedPhone = `254${phone.slice(0, 9)}`;
-
+  
     if (!validatePhoneNumber(formattedPhone)) {
       alert('Please enter a valid Kenyan phone number starting with 254.');
       return;
     }
-
+  
+    // Set loading state to true while awaiting the payment initiation
     setLoading(true);
-
+    setPaymentStatus('Initiating payment... Please wait.');
+  
     try {
+      // Attempt to initiate the payment
       const response = await api.initiatePayment(formattedPhone, amount, lost_id, user_id);
-
-      console.log(JSON.stringify(response, null, 1));
-      if (response.status === 'success') {
+  
+      console.log("Payment initiation response:", JSON.stringify(response, null, 1));
+  
+      // Check if the payment initiation was successful
+      if (response.success) {
         setPaymentStatus('Payment successful. Redirecting to submit claim...');
+        console.log(`Payment for lost ID ${lost_id} was successful. Redirecting to claim submission.`);
+        
+        // Redirect after a brief delay to ensure the success message is displayed
         setTimeout(() => {
           router.push(`/claim/submit?lost_id=${lost_id}`);
         }, 2000);
       } else {
         setPaymentStatus('Payment failed. Please try again.');
+        console.error('Payment failed response:', response);
       }
     } catch (error) {
+      // Handle error in the payment initiation process
       setPaymentStatus('An error occurred. Please try again.');
       console.error('Payment initiation error:', error);
+  
+      // Check if the error is a specific instance and provide appropriate feedback
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+      } else {
+        console.error("An unknown error occurred.");
+      }
     } finally {
+      // Set loading state to false regardless of success or failure
       setLoading(false);
     }
   };
+  
 
   return (
     <main className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900">

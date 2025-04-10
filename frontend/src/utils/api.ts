@@ -345,48 +345,49 @@ export const fetchClaimById = async (id: string): Promise<Claim | null> => {
 // API call to initiate payment (start the MPESA STK push)
 export const initiatePayment = async (phone: string, amount: number, lost_id: string, user_id: string) => {
     try {
-      // Log the request data
-      console.log("Initiating payment with data:", { phone, amount, lost_id, user_id });
-  
-      // Call the API endpoint to initiate the MPESA payment
-      const response = await fetch('/api/payments/initiate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phone, amount, lost_id, user_id }),
-      });
-  
-      // Log the response status and body for debugging
-      console.log("API response status:", response.status);
-      const data = await response.json();
-      console.log("API response body:", data);
-  
-      // Check for successful response
-      if (!response.ok) {
-        // Throw error with the response error message if present
-        const errorMessage = data.error || 'Failed to initiate payment';
-        console.error("Error response:", errorMessage);
-        throw new Error(errorMessage);
-      }
-  
-      // Return the successful response data (CheckoutRequestID)
-      return data;
+        // Log the request data for debugging
+        console.log("Initiating payment with data:", { phone, amount, lost_id, user_id });
+
+        // Call the API endpoint to initiate the MPESA payment
+        const response = await fetch('/api/payments/initiate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ phone, amount, lost_id, user_id }),
+        });
+
+        // Log the response status and body for debugging
+        console.log("API response status:", response.status);
+        const data = await response.json();
+        console.log("API response body:", data);
+
+        // Check if the response status indicates success
+        if (!response.ok) {
+            const errorMessage = data.error || 'Failed to initiate payment';
+            console.error("Error response:", errorMessage);
+            throw new Error(errorMessage);
+        }
+
+        // Log the successful response and return the CheckoutRequestID
+        console.log("Payment initiated successfully. CheckoutRequestID:", data.CheckoutRequestID);
+        return data; // Return the successful response (CheckoutRequestID)
     } catch (error: unknown) {
-      // Enhanced logging for the error that occurred
-      console.error("Error initiating payment:", error);
-  
-      // Check if it's a network error or other type of error
-      if (error instanceof Error) {
-        console.error("Error message:", error.message);
-      } else {
-        console.error("Unknown error occurred");
-      }
-  
-      // Throw the error with a clear message
-      throw new Error(error instanceof Error ? error.message : 'Something went wrong while initiating payment');
+        // Enhanced logging for the error that occurred
+        console.error("Error initiating payment:", error);
+
+        // Check if it's an instance of Error to log a message
+        if (error instanceof Error) {
+            console.error("Error message:", error.message);
+        } else {
+            console.error("Unknown error occurred during payment initiation");
+        }
+
+        // Throw the error with a clear message to the calling function
+        throw new Error(error instanceof Error ? error.message : 'Something went wrong while initiating payment');
     }
-  };
+};
+
   
   // API call to handle MPESA callback and update the payment status
   export const handleMpesaCallback = async (paymentData: unknown) => {
