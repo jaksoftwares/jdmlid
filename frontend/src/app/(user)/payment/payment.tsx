@@ -1,6 +1,4 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/utils/api';
 
@@ -22,30 +20,40 @@ const PaymentPage = () => {
     return phoneRegex.test(phone);
   };
 
-  // Function to check payment status periodically
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const checkPaymentStatus = async () => {
+  // Memoize checkPaymentStatus to prevent redefinition
+  const checkPaymentStatus = useCallback(async () => {
     if (!lost_id) {
       setPaymentStatus('Lost ID is missing.');
       return;
     }
-  
+
     try {
       const response = await api.checkPaymentStatus(lost_id);
-  
+
       if (response && response.status === 'confirmed') {
         setPaymentStatus('Payment confirmed! You can now submit your claim.');
         setTimeout(() => {
           router.push(`/claim/submit?lost_id=${lost_id}`);
         }, 2000);
+        return; // Stop further checks once payment is confirmed
       } else {
         setPaymentStatus('Payment not confirmed yet. Please wait...');
+        retries++;
+        if (retries >= maxRetries) {
+          setPaymentStatus('Payment failed. Please try again.');
+        }
       }
     } catch (error) {
       setPaymentStatus('Error checking payment status. Please try again.');
+      retries++;
       console.error('Error checking payment status:', error);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lost_id, router]);
+
+  // Retry limit and polling interval
+  const maxRetries = 10;
+  let retries = 0;
 
   useEffect(() => {
     if (waitingForPayment) {
@@ -86,8 +94,8 @@ const PaymentPage = () => {
       if (response.message === "STK Push initiated successfully") {
         setPaymentStatus('Payment initiated successfully. Please check your phone and confirm the payment.');
       } else {
-        setPaymentStatus('Payment failed. Please try again.');
-        console.error('Payment failed response:', response);
+        setPaymentStatus('Payment initiation failed. Please try again.');
+        console.error('Payment initiation failed:', response);
       }
     } catch (error) {
       setPaymentStatus('An error occurred. Please try again.');
@@ -140,7 +148,7 @@ const PaymentPage = () => {
         </button>
 
         {paymentStatus && (
-          <p className={`text-center text-sm mt-4 ${paymentStatus.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-center text-sm mt-4 ${paymentStatus.includes('success') ? 'text-green-600' : paymentStatus.includes('failed') ? 'text-red-600' : 'text-yellow-600'}`}>
             {paymentStatus}
           </p>
         )}
