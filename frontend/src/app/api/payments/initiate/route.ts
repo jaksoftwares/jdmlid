@@ -14,6 +14,12 @@ const consumerKey = process.env.MPESA_CONSUMER_KEY!;
 const consumerSecret = process.env.MPESA_CONSUMER_SECRET!;
 const callbackUrl = process.env.MPESA_CALLBACK_URL!;
 
+// Ensure environment variables are set
+if (!shortcode || !passkey || !consumerKey || !consumerSecret || !callbackUrl) {
+  console.error("Missing required MPESA credentials or callback URL in environment variables.");
+  throw new Error("Missing required MPESA credentials or callback URL.");
+}
+
 // Get MPESA Access Token
 async function getMpesaToken() {
   const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
@@ -52,11 +58,17 @@ export async function POST(req: NextRequest) {
     console.log("Received Payment Request:", body);
 
     // Validate required parameters
-    if (!phone || !amount || !lost_id || !user_id) {
-      return NextResponse.json(
-        { error: "Missing required payment parameters" },
-        { status: 400 }
-      );
+    if (!phone) {
+      return NextResponse.json({ error: "Missing phone parameter" }, { status: 400 });
+    }
+    if (!amount) {
+      return NextResponse.json({ error: "Missing amount parameter" }, { status: 400 });
+    }
+    if (!lost_id) {
+      return NextResponse.json({ error: "Missing lost_id parameter" }, { status: 400 });
+    }
+    if (!user_id) {
+      return NextResponse.json({ error: "Missing user_id parameter" }, { status: 400 });
     }
 
     // Get MPESA token

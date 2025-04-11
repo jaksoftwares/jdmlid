@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       : new Date();
 
     // Update the payment status in Supabase to 'completed' and save other details
-    const { error: updateError } = await supabase
+    const { error: updateError, data: updateData } = await supabase
       .from('payments')
       .update({
         payment_status: 'completed',
@@ -94,12 +94,12 @@ export async function POST(req: NextRequest) {
 
     // Handle any errors during the update process
     if (updateError) {
-      console.error(`Failed to update payment for CheckoutRequestID: ${CheckoutRequestID}`);
+      console.error(`Failed to update payment for CheckoutRequestID: ${CheckoutRequestID}, Error: ${updateError.message}`);
       return NextResponse.json({ error: 'Failed to update payment' }, { status: 500 });
     }
 
     // Log the successful payment update
-    console.log(`Payment for CheckoutRequestID: ${CheckoutRequestID} updated successfully`);
+    console.log(`Payment for CheckoutRequestID: ${CheckoutRequestID} updated successfully. Updated Data:`, updateData);
 
     return NextResponse.json({ success: true, message: 'Payment updated successfully' });
   } catch (err) {

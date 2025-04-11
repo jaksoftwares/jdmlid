@@ -388,6 +388,12 @@ export const initiatePayment = async (phone: string, amount: number, lost_id: st
     }
 };
 
+export const checkPaymentStatus = async (lost_id: string) => {
+    const res = await fetch(`/api/payments/status?lost_id=${lost_id}`);
+    if (!res.ok) throw new Error('Failed to fetch payment status');
+    return res.json();
+  };
+
   
   // API call to handle MPESA callback and update the payment status
   export const handleMpesaCallback = async (paymentData: unknown) => {
@@ -548,6 +554,7 @@ const api = {
 
     //payment
     initiatePayment,
+    checkPaymentStatus,
     
 };
 

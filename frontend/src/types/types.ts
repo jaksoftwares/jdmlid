@@ -82,3 +82,9 @@ export interface ClaimFormData  {
   phone: string;
   comments: string;
 };
+
+export interface PaymentResponse  {
+  CheckoutRequestID: string;
+  MerchantRequestID?: string;
+  CustomerMessage: string;
+};
