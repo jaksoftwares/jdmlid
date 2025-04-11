@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import api from '@/utils/api';
 
 const PaymentPage = () => {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const lost_id = searchParams.get('lost_id');
   const amount = parseFloat(searchParams.get('amount') || '0');
@@ -13,57 +12,11 @@ const PaymentPage = () => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
-  const [waitingForPayment, setWaitingForPayment] = useState(false); // For the waiting state
 
   const validatePhoneNumber = (phone: string) => {
     const phoneRegex = /^254\d{9}$/;
     return phoneRegex.test(phone);
   };
-
-  // Memoize checkPaymentStatus to prevent redefinition
-  const checkPaymentStatus = useCallback(async () => {
-    if (!lost_id) {
-      setPaymentStatus('Lost ID is missing.');
-      return;
-    }
-
-    try {
-      const response = await api.checkPaymentStatus(lost_id);
-
-      if (response && response.status === 'confirmed') {
-        setPaymentStatus('Payment confirmed! You can now submit your claim.');
-        setTimeout(() => {
-          router.push(`/claim/submit?lost_id=${lost_id}`);
-        }, 2000);
-        return; // Stop further checks once payment is confirmed
-      } else {
-        setPaymentStatus('Payment not confirmed yet. Please wait...');
-        retries++;
-        if (retries >= maxRetries) {
-          setPaymentStatus('Payment failed. Please try again.');
-        }
-      }
-    } catch (error) {
-      setPaymentStatus('Error checking payment status. Please try again.');
-      retries++;
-      console.error('Error checking payment status:', error);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lost_id, router]);
-
-  // Retry limit and polling interval
-  const maxRetries = 10;
-  let retries = 0;
-
-  useEffect(() => {
-    if (waitingForPayment) {
-      const interval = setInterval(async () => {
-        await checkPaymentStatus();
-      }, 3000); // Check every 3 seconds for payment confirmation
-
-      return () => clearInterval(interval); // Clean up interval on component unmount
-    }
-  }, [checkPaymentStatus, waitingForPayment]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +36,6 @@ const PaymentPage = () => {
 
     setLoading(true);
     setPaymentStatus('Sending payment request... Please check your phone for the payment prompt.');
-    setWaitingForPayment(true); // Start waiting for payment status
 
     try {
       const response = await api.initiatePayment(formattedPhone, amount, lost_id, user_id);
@@ -141,7 +93,7 @@ const PaymentPage = () => {
 
         <button
           type="submit"
-          disabled={loading || waitingForPayment} // Disable button while waiting
+          disabled={loading} // Disable button while waiting
           className="w-full py-3 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 transition disabled:opacity-50"
         >
           {loading ? 'Processing...' : 'Pay Now'}
