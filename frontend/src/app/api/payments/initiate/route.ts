@@ -12,6 +12,7 @@ const shortcode = process.env.MPESA_SHORTCODE!;
 const passkey = process.env.MPESA_PASSKEY!;
 const consumerKey = process.env.MPESA_CONSUMER_KEY!;
 const consumerSecret = process.env.MPESA_CONSUMER_SECRET!;
+// const callbackUrl = process.env.MPESA_CALLBACK_URL!;
 
 // ✅ HARDCODED CALLBACK URL
 const callbackUrl = "https://jkuatfindmylostid.vercel.app/api/payments/callback";

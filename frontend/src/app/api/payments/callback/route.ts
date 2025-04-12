@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         )
       : new Date();
 
-    const { error: updateError, data: updateData } = await supabase
+      const { error: updateError, data: updateData } = await supabase
       .from('payments')
       .update({
         payment_status: 'completed',
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         phone,
         transaction_id: mpesaReceiptNumber || CheckoutRequestID,
       })
-      .eq('id', payment.id);
+      .eq('checkout_request_id', CheckoutRequestID); 
 
     if (updateError) {
       console.error(`Failed to update payment for CheckoutRequestID: ${CheckoutRequestID}, Error: ${updateError.message}`);
