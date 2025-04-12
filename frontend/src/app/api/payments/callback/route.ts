@@ -13,11 +13,9 @@ interface MpesaCallbackItem {
 
 export async function POST(req: NextRequest) {
   try {
-    // Parse the incoming request JSON
     const json = await req.json();
-    console.log("Received MPESA callback:", json); // Enhanced logging of the callback request
+    console.log("Received MPESA callback:", json);
 
-    // Get the callback body from the response
     const callback = json?.Body?.stkCallback;
 
     if (!callback) {
@@ -25,7 +23,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid MPESA callback structure' }, { status: 400 });
     }
 
-    // Extract relevant fields from the callback
     const {
       CheckoutRequestID,
       ResultCode,
@@ -33,7 +30,6 @@ export async function POST(req: NextRequest) {
       CallbackMetadata,
     } = callback;
 
-    // If payment result code is not successful, return an error response
     if (ResultCode !== 0) {
       console.error(`Payment failed for CheckoutRequestID: ${CheckoutRequestID}, ResultDesc: ${ResultDesc}`);
       return NextResponse.json(
@@ -46,14 +42,12 @@ export async function POST(req: NextRequest) {
     let transactionDate: number | null = null;
     let mpesaReceiptNumber: string | null = null;
 
-    // Extract additional information from CallbackMetadata
     (CallbackMetadata?.Item || []).forEach((item: MpesaCallbackItem) => {
       if (item.Name === "PhoneNumber") phone = String(item.Value);
       if (item.Name === "TransactionDate") transactionDate = Number(item.Value);
       if (item.Name === "MpesaReceiptNumber") mpesaReceiptNumber = String(item.Value);
     });
 
-    // Retrieve the payment record using CheckoutRequestID
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
       .select('*')
@@ -65,13 +59,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
 
-    // Prevent double updating if the payment is already marked as completed
     if (payment.payment_status === 'completed') {
       console.log(`Payment for CheckoutRequestID: ${CheckoutRequestID} is already completed.`);
       return NextResponse.json({ success: true, message: 'Payment already completed' });
     }
 
-    // Parse the transaction date into a proper Date object
     const parsedDate = transactionDate
       ? new Date(
           `${transactionDate}`.replace(
@@ -81,7 +73,6 @@ export async function POST(req: NextRequest) {
         )
       : new Date();
 
-    // Update the payment status in Supabase to 'completed' and save other details
     const { error: updateError, data: updateData } = await supabase
       .from('payments')
       .update({
@@ -92,28 +83,27 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', payment.id);
 
-    // Handle any errors during the update process
     if (updateError) {
       console.error(`Failed to update payment for CheckoutRequestID: ${CheckoutRequestID}, Error: ${updateError.message}`);
       return NextResponse.json({ error: 'Failed to update payment' }, { status: 500 });
     }
 
-    // Log the successful payment update
     console.log(`Payment for CheckoutRequestID: ${CheckoutRequestID} updated successfully. Updated Data:`, updateData);
 
     return NextResponse.json({ success: true, message: 'Payment updated successfully' });
   } catch (err) {
-    // Enhanced logging for error tracking
     console.error('MPESA callback processing error:', err);
-
-    // Check if it's a network error or other type of error
     if (err instanceof Error) {
       console.error("Error message:", err.message);
     } else {
       console.error("Unknown error occurred during callback processing");
     }
 
-    // Return a generic internal server error message
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
+}
+
+// ✅ Add this GET handler for Safaricom's URL verification check
+export async function GET() {
+  return NextResponse.json({ message: 'Callback URL is active' });
 }
