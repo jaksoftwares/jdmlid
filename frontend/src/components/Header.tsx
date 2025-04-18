@@ -25,15 +25,15 @@ const Header = () => {
         <Link href="/" className="flex items-center">
           <Image
             src="/logo.png"
-            height={8}
+            height={1}
             width={100}
             alt="JKUAT Find My Lost ID Logo"
-            className="h-8 mr-2"
+            className="h-16 mr-2 w-40"
           />
-         <h1 className="text-2xl font-bold hover:text-jkuatYellow transition duration-300 leading-tight">
-  <span className="block sm:inline">JKUAT Find</span>{" "}
-  <span className="block sm:inline">My Lost ID</span>
-</h1>
+          <h1 className="hidden sm:block text-2xl font-bold hover:text-jkuatYellow transition duration-300 leading-tight">
+            <span className="block sm:inline">JKUAT Find</span>{" "}
+            <span className="block sm:inline">My Lost ID</span>
+          </h1>
         </Link>
 
         {/* Desktop Navigation */}
