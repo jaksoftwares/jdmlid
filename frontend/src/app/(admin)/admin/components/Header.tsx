@@ -22,7 +22,7 @@ const Header = () => {
         {/* Profile Dropdown */}
         <div className="relative">
           <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center space-x-2 focus:outline-none">
-            <Image src="/admin-avatar.png" alt="Admin" width={32} height={32} className="rounded-full" />
+            <Image src="/images/admin-default.jpg" alt="Admin" width={32} height={32} className="rounded-full" />
             <span className="hidden md:block text-jkuatGreen font-semibold">Admin</span>
             <FiUser className="text-xl text-jkuatGreen" />
           </button>
