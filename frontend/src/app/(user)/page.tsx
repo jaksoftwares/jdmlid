@@ -1,6 +1,18 @@
 "use client";
 import Link from "next/link";
-import { FaSearch, FaIdCard, FaCheckCircle, FaUserShield, FaInfoCircle } from "react-icons/fa";
+import { FaSearch, FaIdCard, FaCheckCircle, FaUserShield, FaInfoCircle, FaPassport, FaCar, FaBuilding, FaHospitalSymbol, FaRegCreditCard, FaSchool } from "react-icons/fa";
+import { MdCreditCard } from "react-icons/md";
+
+const feeCategories = [
+  { name: "National ID", fee: 300, icon: <FaIdCard className="text-3xl text-jkuatGreen" /> },
+  { name: "Passport", fee: 300, icon: <FaPassport className="text-3xl text-jkuatGreen" /> },
+  { name: "Driving License", fee: 300, icon: <FaCar className="text-3xl text-jkuatGreen" /> },
+  { name: "Work ID", fee: 300, icon: <FaBuilding className="text-3xl text-jkuatGreen" /> },
+  { name: "NHIF Card", fee: 300, icon: <FaHospitalSymbol className="text-3xl text-jkuatGreen" /> },
+  { name: "NSSF Card", fee: 300, icon: <MdCreditCard className="text-3xl text-jkuatGreen" /> },
+  { name: "Bank Card", fee: 300, icon: <FaRegCreditCard className="text-3xl text-jkuatGreen" /> },
+  { name: "School ID", fee: 200, icon: <FaSchool className="text-3xl text-jkuatGreen" /> },
+];
 
 const Home = () => {
   return (
@@ -80,6 +92,38 @@ const Home = () => {
           ))}
         </div>
       </section>
+
+      <section className="bg-gray-50 py-24 px-6 md:px-12">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-14">
+          <h2 className="text-4xl font-extrabold text-gray-900 mb-4">
+            Lost ID Recovery Service Fees
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            A small recovery fee helps us manage, verify, and return lost IDs securely and sustainably.
+          </p>
+        </div>
+
+        <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {feeCategories.map(({ name, fee, icon }) => (
+            <div
+              key={name}
+              className="bg-white rounded-2xl p-6 border shadow-sm hover:shadow-md transition duration-300"
+            >
+              <div className="flex items-center justify-center mb-4">
+                {icon}
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2 text-center">{name}</h3>
+              <p className="text-center text-jkuatGreen text-lg font-bold">KES {fee}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-12 text-center text-sm text-gray-500">
+          <em>* School ID recovery is subsidized to support students.</em>
+        </div>
+      </div>
+    </section>
 
       {/* Why Choose Us */}
       <section className="py-16 px-6 text-center bg-blue-50">
