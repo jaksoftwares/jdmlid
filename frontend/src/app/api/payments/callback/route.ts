@@ -6,130 +6,103 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
-interface MpesaCallbackItem {
-  Name: string;
-  Value: string | number;
-}
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("Received request for MPESA callback.");
-
-    // Parse the incoming request body
+    console.log("Received MPESA callback request");
     const json = await req.json();
-    console.log("Received MPESA callback JSON:", JSON.stringify(json, null, 2));
+    console.log("Raw callback JSON:", JSON.stringify(json, null, 2));
 
-    const callback = json?.Body?.stkCallback;
-    if (!callback) {
-      console.error("Invalid MPESA callback structure: Missing 'stkCallback'.");
-      return NextResponse.json({ error: 'Invalid MPESA callback structure' }, { status: 400 });
+    // 1. Add stronger validation for callback structure
+    if (!json?.Body?.stkCallback) {
+      console.error("Invalid callback structure:", json);
+      return NextResponse.json({ error: 'Invalid MPESA callback format' }, { status: 400 });
     }
 
-    const {
-      CheckoutRequestID,
-      ResultCode,
-      ResultDesc,
-      CallbackMetadata,
-    } = callback;
+    const callback = json.Body.stkCallback;
+    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = callback;
 
-    // Check if the payment was successful
+    // 2. Handle failed payments first
     if (ResultCode !== 0) {
-      console.error(`Payment failed for CheckoutRequestID: ${CheckoutRequestID}, ResultDesc: ${ResultDesc}`);
-      return NextResponse.json(
-        { error: 'Payment failed', description: ResultDesc },
-        { status: 400 }
+      console.warn(`Payment failed [${CheckoutRequestID}]: ${ResultDesc}`);
+      
+      // Update database with failed status
+      await supabase.from('payments').update({ 
+        payment_status: 'failed',
+        failure_reason: ResultDesc
+      }).eq('checkout_request_id', CheckoutRequestID);
+      
+      return NextResponse.json({ status: 'failed' });
+    }
+
+    console.log(`Payment successful [${CheckoutRequestID}]`);
+
+    // 3. Fix metadata extraction
+    let phone, mpesaReceiptNumber, transactionDateStr;
+    if (CallbackMetadata?.Item) {
+      for (const item of CallbackMetadata.Item) {
+        switch (item.Name) {
+          case "PhoneNumber": 
+            phone = item.Value;
+            break;
+          case "MpesaReceiptNumber":
+            mpesaReceiptNumber = item.Value;
+            break;
+          case "TransactionDate":
+            transactionDateStr = String(item.Value); // Keep as string!
+            break;
+        }
+      }
+    }
+
+    // 4. Proper date parsing
+    let transactionDate = null;
+    if (transactionDateStr && transactionDateStr.length === 14) {
+      transactionDate = new Date(
+        `${transactionDateStr.slice(0, 4)}-${transactionDateStr.slice(4, 6)}-${transactionDateStr.slice(6, 8)}T${transactionDateStr.slice(8, 10)}:${transactionDateStr.slice(10, 12)}:${transactionDateStr.slice(12, 14)}`
       );
     }
 
-    // Log the successful callback details
-    console.log(`Payment successful for CheckoutRequestID: ${CheckoutRequestID}`);
-    let phone: string | null = null;
-    let transactionDate: number | null = null;
-    let mpesaReceiptNumber: string | null = null;
-
-    // Extract the necessary details from the callback metadata
-    (CallbackMetadata?.Item || []).forEach((item: MpesaCallbackItem) => {
-      if (item.Name === "PhoneNumber") phone = String(item.Value);
-      if (item.Name === "TransactionDate") transactionDate = Number(item.Value);
-      if (item.Name === "MpesaReceiptNumber") mpesaReceiptNumber = String(item.Value);
-    });
-
-    console.log("Extracted callback metadata:", {
+    console.log("Parsed metadata:", {
       phone,
-      transactionDate,
       mpesaReceiptNumber,
+      transactionDate
     });
 
-    // Fetch the corresponding payment record from the database
-    console.log(`Fetching payment with CheckoutRequestID: ${CheckoutRequestID}`);
-    const { data: payment, error: paymentError } = await supabase
+    // 5. Fetch payment record
+    const { data: payment, error: fetchError } = await supabase
       .from('payments')
-      .select('*')
+      .select()
       .eq('checkout_request_id', CheckoutRequestID)
       .single();
 
-    // Log any errors in fetching the payment
-    if (paymentError || !payment) {
-      console.error(`Payment not found for CheckoutRequestID: ${CheckoutRequestID}`);
-      return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
+    if (!payment || fetchError) {
+      console.error(`Payment not found: ${CheckoutRequestID}`, fetchError);
+      return NextResponse.json({ error: 'Payment record not found' }, { status: 404 });
     }
 
-    console.log(`Found payment for CheckoutRequestID: ${CheckoutRequestID}:`, payment);
-
-    // If the payment status is already completed, log and exit
-    if (payment.payment_status === 'completed') {
-      console.log(`Payment for CheckoutRequestID: ${CheckoutRequestID} is already completed.`);
-      return NextResponse.json({ success: true, message: 'Payment already completed' });
-    }
-
-    // Log the payment status before attempting to update
-    console.log("Updating payment status to 'completed' for CheckoutRequestID:", CheckoutRequestID);
-
-    // Parse the transaction date into a valid Date object
-    const parsedDate = transactionDate
-      ? new Date(
-          `${transactionDate}`.replace(
-            /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/,
-            '$1-$2-$3T$4:$5:$6'
-          )
-        )
-      : new Date();
-
-    console.log("Parsed transaction date:", parsedDate);
-
-    // Attempt to update the payment record in the database
-    console.log("Updating payment record in the database...");
-    const { error: updateError, data: updateData } = await supabase
+    // 6. Update database (fix date format)
+    const { error: updateError } = await supabase
       .from('payments')
       .update({
         payment_status: 'completed',
-        transaction_date: parsedDate,
-        phone,
         transaction_id: mpesaReceiptNumber || CheckoutRequestID,
+        transaction_date: transactionDate?.toISOString() || new Date().toISOString(), // ISO format required
+        // Don't overwrite original phone number!
       })
       .eq('checkout_request_id', CheckoutRequestID);
 
-    // Log any errors or success during the update process
     if (updateError) {
-      console.error(`Failed to update payment for CheckoutRequestID: ${CheckoutRequestID}, Error: ${updateError.message}`);
-      return NextResponse.json({ error: 'Failed to update payment' }, { status: 500 });
+      console.error(`Update failed: ${CheckoutRequestID}`, updateError);
+      return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
     }
 
-    console.log(`Payment for CheckoutRequestID: ${CheckoutRequestID} updated successfully. Updated Data:`, updateData);
+    console.log(`Payment ${CheckoutRequestID} updated successfully`);
+    return NextResponse.json({ success: true });
 
-    // Return a success response if everything goes smoothly
-    return NextResponse.json({ success: true, message: 'Payment updated successfully' });
   } catch (err) {
-    // Log the error details if an exception is thrown
-    console.error('MPESA callback processing error:', err);
-    if (err instanceof Error) {
-      console.error("Error message:", err.message);
-      console.error("Error stack trace:", err.stack);
-    } else {
-      console.error("Unknown error occurred during callback processing");
-    }
-
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Callback processing error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

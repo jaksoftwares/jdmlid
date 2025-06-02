@@ -14,7 +14,7 @@ const consumerKey = process.env.MPESA_CONSUMER_KEY!;
 const consumerSecret = process.env.MPESA_CONSUMER_SECRET!;
 // const callbackUrl = process.env.MPESA_CALLBACK_URL!;
 
-// ✅ HARDCODED CALLBACK URL
+
 const callbackUrl = "https://jkuatfindmylostid.vercel.app/api/payments/callback";
 
 // Ensure environment variables are set
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       PartyA: phone,
       PartyB: shortcode,
       PhoneNumber: phone,
-      CallBackURL: callbackUrl, // ✅ HARDCODED CALLBACK URL USED HERE
+      CallBackURL: callbackUrl,
       AccountReference: lost_id,
       TransactionDesc: "Payment for Lost Item",
     };
