@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const json = await req.json();
     console.log("Raw callback JSON:", JSON.stringify(json, null, 2));
 
-    // 1. Add stronger validation for callback structure
+    // Validate callback structure
     if (!json?.Body?.stkCallback) {
       console.error("Invalid callback structure:", json);
       return NextResponse.json({ error: 'Invalid MPESA callback format' }, { status: 400 });
@@ -22,54 +22,66 @@ export async function POST(req: NextRequest) {
     const callback = json.Body.stkCallback;
     const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = callback;
 
-    // 2. Handle failed payments first
+    // Handle failed payments
     if (ResultCode !== 0) {
       console.warn(`Payment failed [${CheckoutRequestID}]: ${ResultDesc}`);
       
-      // Update database with failed status
-      await supabase.from('payments').update({ 
-        payment_status: 'failed',
-        failure_reason: ResultDesc
-      }).eq('checkout_request_id', CheckoutRequestID);
+      // Update payment status to failed
+      const { error: updateError } = await supabase
+        .from('payments')
+        .update({ 
+          payment_status: 'failed',
+          failure_reason: ResultDesc
+        })
+        .eq('checkout_request_id', CheckoutRequestID);
+
+      if (updateError) {
+        console.error(`Failed to update failed payment: ${CheckoutRequestID}`, updateError);
+      }
       
       return NextResponse.json({ status: 'failed' });
     }
 
     console.log(`Payment successful [${CheckoutRequestID}]`);
 
-    // 3. Fix metadata extraction
+    // Extract metadata
     let phone, mpesaReceiptNumber, transactionDateStr;
     if (CallbackMetadata?.Item) {
       for (const item of CallbackMetadata.Item) {
         switch (item.Name) {
           case "PhoneNumber": 
-            phone = item.Value;
+            phone = String(item.Value);
             break;
           case "MpesaReceiptNumber":
-            mpesaReceiptNumber = item.Value;
+            mpesaReceiptNumber = String(item.Value);
             break;
           case "TransactionDate":
-            transactionDateStr = String(item.Value); // Keep as string!
+            transactionDateStr = String(item.Value);
             break;
         }
       }
     }
 
-    // 4. Proper date parsing
-    let transactionDate = null;
+    // Parse transaction date
+    let transactionDate: Date | null = null;
     if (transactionDateStr && transactionDateStr.length === 14) {
-      transactionDate = new Date(
-        `${transactionDateStr.slice(0, 4)}-${transactionDateStr.slice(4, 6)}-${transactionDateStr.slice(6, 8)}T${transactionDateStr.slice(8, 10)}:${transactionDateStr.slice(10, 12)}:${transactionDateStr.slice(12, 14)}`
-      );
+      const year = transactionDateStr.slice(0, 4);
+      const month = transactionDateStr.slice(4, 6);
+      const day = transactionDateStr.slice(6, 8);
+      const hour = transactionDateStr.slice(8, 10);
+      const minute = transactionDateStr.slice(10, 12);
+      const second = transactionDateStr.slice(12, 14);
+      
+      transactionDate = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
     }
 
     console.log("Parsed metadata:", {
       phone,
       mpesaReceiptNumber,
-      transactionDate
+      transactionDate: transactionDate?.toISOString()
     });
 
-    // 5. Fetch payment record
+    // Fetch payment record
     const { data: payment, error: fetchError } = await supabase
       .from('payments')
       .select()
@@ -81,14 +93,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Payment record not found' }, { status: 404 });
     }
 
-    // 6. Update database (fix date format)
+    // Update database
     const { error: updateError } = await supabase
       .from('payments')
       .update({
         payment_status: 'completed',
         transaction_id: mpesaReceiptNumber || CheckoutRequestID,
-        transaction_date: transactionDate?.toISOString() || new Date().toISOString(), // ISO format required
-        // Don't overwrite original phone number!
+        transaction_date: transactionDate ? transactionDate.toISOString() : new Date().toISOString()
       })
       .eq('checkout_request_id', CheckoutRequestID);
 
@@ -106,8 +117,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ✅ Add this GET handler for Safaricom's URL verification check
 export async function GET() {
-  console.log("GET request received for callback URL verification.");
   return NextResponse.json({ message: 'Callback URL is active' });
 }
