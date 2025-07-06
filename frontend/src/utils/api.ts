@@ -41,126 +41,127 @@ let cachedLostIDs: LostID[] | null = null;
 let lastLostIDFetch = 0;
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
-const fetchLostIDs = async (): Promise<LostID[]> => {
-    const now = Date.now();
-    if (cachedLostIDs && now - lastLostIDFetch < CACHE_DURATION) {
-      console.log("Returning cached Lost IDs...");
-      return cachedLostIDs;
-    }
-  
-    try {
-      console.log("Fetching Lost IDs from API...");
-      const response = await fetch(LOST_ID_URL);
-      const data = await handleResponse<LostID[]>(response);
-  
-      // Cache result
-      cachedLostIDs = data;
-      lastLostIDFetch = now;
-  
-      return data;
-    } catch (error) {
-      console.error("Error fetching Lost IDs:", error);
-      throw new Error("Failed to fetch Lost IDs.");
-    }
-  };
+export const fetchLostIDs = async (): Promise<LostID[]> => {
+  const now = Date.now();
+  if (cachedLostIDs && now - lastLostIDFetch < CACHE_DURATION) {
+    console.log("Returning cached Lost IDs...");
+    return cachedLostIDs;
+  }
 
-const fetchLostIDById = async (id: string): Promise<LostID> => {
-    try {
-      const response = await fetch(`${LOST_ID_URL}/${id}`);
-  
-      // Log the response status and body for debugging purposes (in development)
-      if (process.env.NODE_ENV === 'development') {
-        console.log("API Response Status:", response.status);
-        console.log("API Response Status Text:", response.statusText);
-  
-        // Read the response body text (only once) for logging
-        const responseBody = await response.clone().text(); // Clone the response to read the body without consuming the stream
-        console.log("API Response Body:", responseBody);
-      }
-  
-      // Check if the response is successful
-      if (!response.ok) {
-        throw new Error(`Error fetching Lost ID: ${response.statusText}`);
-      }
-  
-      // Parse the JSON response
-      const data = await response.json();
-  
-      // Ensure data is of the expected shape, or throw an error if not
-      if (!data || typeof data !== 'object') {
-        throw new Error("Invalid response structure");
-      }
-  
-      return data as LostID; // Typecast to LostID
-    } catch (error) {
-      console.error("Error fetching Lost ID by ID:", error);
-      throw new Error("Failed to fetch Lost ID details. Please try again later.");
-    }
-  };
-  
+  try {
+    console.log("Fetching Lost IDs from API...");
+    const response = await fetch(LOST_ID_URL);
+    const data = await handleResponse<LostID[]>(response);
 
+    cachedLostIDs = data;
+    lastLostIDFetch = now;
 
-// 🔍 Search Lost IDs
-const searchLostIDs = async (query: string): Promise<LostID[]> => {
-    try {
-        const response = await fetch(`${LOST_ID_URL}/search?query=${query}`);
-        return await handleResponse<LostID[]>(response);
-    } catch (error) {
-        console.error("Error searching Lost IDs:", error);
-        return [];
-    }
+    return data;
+  } catch (error) {
+    console.error("Error fetching Lost IDs:", error);
+    throw new Error("Failed to fetch Lost IDs.");
+  }
+};
+
+// 🔍 Search Lost IDs (reusing fetchLostIDs with query param)
+export const searchLostIDs = async (query: string): Promise<LostID[]> => {
+  try {
+    const url = new URL(LOST_ID_URL, window.location.origin);
+    url.searchParams.set("query", query);
+
+    const response = await fetch(url.toString());
+    return await handleResponse<LostID[]>(response);
+  } catch (error) {
+    console.error("Error searching Lost IDs:", error);
+    return [];
+  }
+};
+
+// 📄 Fetch Lost ID by ID
+export const fetchLostIDById = async (id: string): Promise<LostID> => {
+  try {
+    const response = await fetch(`${LOST_ID_URL}/${id}`);
+    return await handleResponse<LostID>(response);
+  } catch (error) {
+    console.error("Error fetching Lost ID by ID:", error);
+    throw new Error("Failed to fetch Lost ID details.");
+  }
 };
 
 // 📤 Upload Lost ID
-type NewLostID = Omit<LostID, "id" | "id_categories">; 
+export type NewLostID = Omit<LostID, "id" | "id_categories">;
 
-// In api.ts: The backend expects category_id as a string
-const uploadLostID = async (lostIDData: NewLostID): Promise<LostID | { message: string; error: string }> => {
-    try {
-        const response = await fetch(`${LOST_ID_URL}/upload`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(lostIDData), // Ensure lostIDData has category_id as a string
-        });
+export const uploadLostID = async (
+  lostIDData: NewLostID
+): Promise<LostID> => {
+  try {
+    const response = await fetch(LOST_ID_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(lostIDData),
+    });
 
-        const data = await response.json();
+    const data = await response.json();
 
-        if (response.ok) {
-            return data.lostId || { message: "Failed to upload Lost ID", error: "Unexpected data format" };
-        } else {
-            return { message: "Failed to upload Lost ID", error: data?.error || "Unknown error" };
-        }
-    } catch (error) {
-        console.error("Error uploading Lost ID:", error);
-        return { message: "Failed to upload Lost ID", error: error instanceof Error ? error.message : "Unknown error" };
+    if (!response.ok) {
+      throw new Error(data?.error || "Failed to upload Lost ID");
     }
+
+    return data.lostId;
+  } catch (error) {
+    console.error("Error uploading Lost ID:", error);
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
+  }
 };
 
 // ✏️ Update Lost ID
-const updateLostID = async (id: string, updateData: Partial<LostID>): Promise<LostID> => {
-    try {
-        const response = await fetch(`${LOST_ID_URL}/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updateData),
-        });
-        return await handleResponse<LostID>(response);
-    } catch (error) {
-        console.error("Error updating Lost ID:", error);
-        throw error;
+export const updateLostID = async (
+  id: string,
+  updateData: Partial<LostID>
+): Promise<LostID> => {
+  try {
+    const response = await fetch(`${LOST_ID_URL}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updateData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.error || "Failed to update Lost ID");
     }
+
+    if (!data || typeof data !== "object" || !data.id) {
+      throw new Error("Invalid response from server: Expected LostID object");
+    }
+
+    return data as LostID;
+  } catch (error) {
+    console.error("Error updating Lost ID:", error);
+    throw error;
+  }
 };
 
+
 // 🗑 Delete Lost ID
-const deleteLostID = async (id: string): Promise<{ message: string }> => {
-    try {
-        const response = await fetch(`${LOST_ID_URL}/${id}`, { method: "DELETE" });
-        return await handleResponse<{ message: string }>(response);
-    } catch (error) {
-        console.error("Error deleting Lost ID:", error);
-        throw error;
-    }
+export const deleteLostID = async (
+  id: string
+): Promise<{ message: string }> => {
+  try {
+    const response = await fetch(`${LOST_ID_URL}/${id}`, {
+      method: "DELETE",
+    });
+
+    return await handleResponse<{ message: string }>(response);
+  } catch (error) {
+    console.error("Error deleting Lost ID:", error);
+    throw error;
+  }
 };
+
+
+
 
 // =============================
 // ✅ CATEGORY FUNCTIONS

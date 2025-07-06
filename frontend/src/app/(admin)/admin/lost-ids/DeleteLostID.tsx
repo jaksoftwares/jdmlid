@@ -1,8 +1,9 @@
 "use client";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Modal from "../components/Modal";
 import { LostID } from "@/types/types";
-import api from "@/utils/api"; // Assuming api.deleteLostID exists
+import api from "@/utils/api";
 
 interface DeleteLostIDProps {
   isOpen: boolean;
@@ -18,15 +19,14 @@ const DeleteLostID = ({ isOpen, onClose, lostID }: DeleteLostIDProps) => {
       return await api.deleteLostID(id);
     },
     onSuccess: () => {
-      queryClient.setQueryData(["lostIDs"], (prev: LostID[] | undefined) =>
-        prev ? prev.filter((item) => item.id !== lostID?.id) : []
-      );
-
-      alert("Lost ID deleted successfully.");
+      alert("✅ Lost ID deleted successfully.");
+      // Refetch the lostIDs list to ensure UI is up-to-date
+      queryClient.invalidateQueries({ queryKey: ["lostIDs"] });
       onClose();
     },
-    onError: () => {
-      alert("Failed to delete Lost ID. Please try again.");
+    onError: (error: unknown) => {
+      console.error("Delete Error:", error);
+      alert("❌ Failed to delete Lost ID. Please try again.");
     },
   });
 
@@ -38,16 +38,23 @@ const DeleteLostID = ({ isOpen, onClose, lostID }: DeleteLostIDProps) => {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Confirm Delete">
-      <p>Are you sure you want to delete <strong>{lostID?.owner_name}</strong>’s lost ID?</p>
+      <p>
+        Are you sure you want to delete{" "}
+        <strong>{lostID?.owner_name}</strong>’s lost ID?
+      </p>
       <div className="flex space-x-4 mt-4">
         <button
           onClick={handleDelete}
           className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-          disabled={mutation.status === "pending"} // ✅ FIXED: Use "pending" instead of "loading"
+          disabled={mutation.status === "pending"}
         >
           {mutation.status === "pending" ? "Deleting..." : "Yes, Delete"}
         </button>
-        <button onClick={onClose} className="bg-gray-300 px-4 py-2 rounded-lg">
+        <button
+          onClick={onClose}
+          className="bg-gray-300 px-4 py-2 rounded-lg"
+          disabled={mutation.status === "pending"}
+        >
           Cancel
         </button>
       </div>

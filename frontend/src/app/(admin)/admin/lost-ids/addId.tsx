@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Modal from "../components/Modal";
-import api from "@/utils/api";
-import { LostID, NewLostID, Category } from "@/types/types";  // Ensure NewLostID is imported
+import api, { NewLostID } from "@/utils/api";
+import { LostID, Category } from "@/types/types";
 
 interface AddLostIDProps {
   isOpen: boolean;
@@ -13,14 +13,13 @@ interface AddLostIDProps {
 const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
   const queryClient = useQueryClient();
 
-  const [newLostID, setNewLostID] = useState<LostID>({
-    id: "", 
+  const [newLostID, setNewLostID] = useState<NewLostID>({
     id_number: "",
     owner_name: "",
-    category_id: "", // Must be included
+    category_id: "",
     location_found: "",
     date_found: "",
-    status: "Pending", 
+    status: "Pending",
     contact_info: "",
     comments: "",
   });
@@ -31,7 +30,7 @@ const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await api.fetchIDCategories();
+        const response = await api.fetchIDCategories?.();
         if (response && Array.isArray(response)) {
           setCategories(response);
         } else {
@@ -42,84 +41,81 @@ const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
       }
     };
 
-    fetchCategories();
-  }, []);
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [isOpen]);
 
   const mutation = useMutation({
     mutationFn: async (lostID: NewLostID) => {
       setIsUploading(true);
-      return await api.uploadLostID(lostID); // Upload NewLostID object
+      return await api.uploadLostID(lostID);
     },
     onSuccess: (response) => {
       setIsUploading(false);
-      if ('error' in response) {
-        alert(`Error: ${response.error || "Something went wrong"}`);
+      alert("✅ Lost ID added successfully!");
+      onAdd(response);
+      queryClient.invalidateQueries({ queryKey: ["lostIDs"] });
+      resetForm();
+      onClose();
+    },
+    onError: (error: unknown) => {
+      setIsUploading(false);
+      console.error("Upload Error:", error);
+      if (error instanceof Error) {
+        alert(`❌ Failed to upload Lost ID: ${error.message}`);
       } else {
-        alert("Lost ID added successfully!");
-        onAdd(response);
-        queryClient.setQueryData(["lostIDs"], (prev: LostID[] | undefined) =>
-          prev ? [...prev, response] : [response]
-        );
-        setNewLostID({
-          id: "",
-          id_number: "",
-          owner_name: "",
-          category_id: "",
-          location_found: "",
-          date_found: "",
-          status: "Pending",
-          contact_info: "",
-          comments: "",
-        });
-        onClose();
+        alert("❌ Failed to upload Lost ID: Unknown error");
       }
     },
-    onError: (error) => {
-      console.error("Upload Error:", error);
-      alert("Failed to upload Lost ID. Please try again.");
-      setIsUploading(false);
-    },
   });
-  
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    if (name === "category_id") {
-      setNewLostID((prev) => ({
-        ...prev,
-        category_id: value,  // Store selected category ID
-      }));
-    } else {
-      setNewLostID((prev) => ({
-        ...prev,
-        [name as keyof typeof newLostID]: value,
-      }));
-    }
+    setNewLostID((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
+const handleAddLostID = () => {
+  const {
+    id_number = "",
+    owner_name = "",
+    category_id = "",
+    location_found = "",
+    date_found = "",
+    contact_info = ""
+  } = newLostID;
 
-  const handleAddLostID = async () => {
-    // Ensure all required fields are filled
-    if (
-      !newLostID.id_number ||
-      !newLostID.owner_name ||
-      !newLostID.category_id ||  // category_id is required
-      !newLostID.location_found ||
-      !newLostID.date_found
-    ) {
-      alert("All fields except comments are required.");
-      return;
-    }
-  
-    try {
-      // Pass newLostID directly to the mutation
-      mutation.mutate(newLostID);  // Submit the NewLostID object
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      alert("Failed to upload Lost ID. Please try again.");
-    }
+  if (
+    !id_number.trim() ||
+    !owner_name.trim() ||
+    !category_id.trim() ||
+    !location_found.trim() ||
+    !date_found.trim() ||
+    !contact_info.trim()
+  ) {
+    alert("⚠️ All fields except comments are required.");
+    return;
+  }
+
+  mutation.mutate(newLostID);
+};
+
+  const resetForm = () => {
+    setNewLostID({
+      id_number: "",
+      owner_name: "",
+      category_id: "",
+      location_found: "",
+      date_found: "",
+      status: "Pending",
+      contact_info: "",
+      comments: "",
+    });
   };
-  
-  
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Lost ID">
@@ -127,17 +123,25 @@ const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
         {["id_number", "owner_name", "location_found", "date_found", "contact_info", "comments"].map((field) => (
           <div key={field} className="mb-3">
             <label className="block font-semibold capitalize">{field.replace(/_/g, " ")}</label>
-            <input
-              type={field === "date_found" ? "date" : "text"}
-              name={field}
-              value={newLostID[field as keyof typeof newLostID]}
-              onChange={handleChange}
-              className="border p-2 w-full rounded"
-            />
+            {field === "comments" ? (
+              <textarea
+                name={field}
+                value={newLostID[field as keyof NewLostID] || ""}
+                onChange={handleChange}
+                className="border p-2 w-full rounded"
+              />
+            ) : (
+              <input
+                type={field === "date_found" ? "date" : "text"}
+                name={field}
+                value={newLostID[field as keyof NewLostID] || ""}
+                onChange={handleChange}
+                className="border p-2 w-full rounded"
+              />
+            )}
           </div>
         ))}
 
-        {/* Category Selection */}
         <div className="mb-3">
           <label className="block font-semibold">Category</label>
           <select

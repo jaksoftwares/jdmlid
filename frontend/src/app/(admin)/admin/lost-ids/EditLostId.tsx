@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Modal from "../components/Modal";
@@ -9,15 +10,17 @@ interface EditLostIDProps {
   isOpen: boolean;
   onClose: () => void;
   lostID: LostID | null;
-  onUpdate: (updatedID: LostID) => void; // Added onUpdate prop
+  onUpdate: (updatedID: LostID) => void;
 }
 
 const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState<Partial<LostID> | null>(lostID);
+  const [formData, setFormData] = useState<Partial<LostID>>({});
 
   useEffect(() => {
-    setFormData(lostID);
+    if (lostID) {
+      setFormData(lostID);
+    }
   }, [lostID]);
 
   const mutation = useMutation({
@@ -25,35 +28,43 @@ const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
       if (!updatedData.id) throw new Error("Missing ID");
       return await api.updateLostID(updatedData.id, updatedData);
     },
-    onSuccess: (updatedLostID) => {
-      queryClient.setQueryData(["lostIDs"], (prev: LostID[] | undefined) =>
-        prev
-          ? prev.map((item) => (item.id === updatedLostID.id ? updatedLostID : item))
-          : []
-      );
-      onUpdate(updatedLostID); // Call the onUpdate prop
-      alert("Lost ID updated successfully.");
+    onSuccess: (updatedLostID: LostID) => {
+      alert("✅ Lost ID updated successfully.");
+      onUpdate(updatedLostID);
+      queryClient.invalidateQueries({ queryKey: ["lostIDs"] });
       onClose();
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       console.error("Error updating lost ID:", error);
-      alert("Failed to update Lost ID. Please try again.");
+      if (error instanceof Error) {
+        alert(`❌ Failed to update Lost ID: ${error.message}`);
+      } else {
+        alert("❌ Failed to update Lost ID: Unknown error");
+      }
     },
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    if (!formData) return;
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = () => {
-    if (!formData || !formData.id) return;
+    if (!formData?.id) {
+      alert("❌ Missing ID. Cannot update.");
+      return;
+    }
     mutation.mutate(formData);
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Edit Lost ID">
-      {formData ? (
+      {formData && formData.id ? (
         <div className="space-y-4">
           <input
             type="text"
@@ -88,7 +99,7 @@ const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
           />
           <select
             name="status"
-            value={formData.status || ""}
+            value={formData.status || "Pending"}
             onChange={handleChange}
             className="w-full p-2 border rounded"
           >
