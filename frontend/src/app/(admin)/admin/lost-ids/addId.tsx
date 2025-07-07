@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Modal from "../components/Modal";
@@ -24,7 +26,6 @@ const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
     comments: "",
   });
 
-  const [isUploading, setIsUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
@@ -48,24 +49,44 @@ const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
 
   const mutation = useMutation({
     mutationFn: async (lostID: NewLostID) => {
-      setIsUploading(true);
       return await api.uploadLostID(lostID);
     },
-    onSuccess: (response) => {
-      setIsUploading(false);
+    onMutate: async (newLostID) => {
+      await queryClient.cancelQueries({ queryKey: ["lostIDs"] });
+
+      const previousLostIDs = queryClient.getQueryData<LostID[]>(["lostIDs"]);
+
+        const optimisticLostID: LostID = {
+          id: `temp-${Date.now()}`,
+          ...newLostID,
+        };
+
+      queryClient.setQueryData(["lostIDs"], (old: LostID[] | undefined) =>
+        old ? [...old, optimisticLostID] : [optimisticLostID]
+      );
+
+      return { previousLostIDs };
+    },
+    onSuccess: (savedLostID) => {
+      // Replace temp ID with real saved ID
+      queryClient.setQueryData(["lostIDs"], (old: LostID[] | undefined) =>
+        old
+          ? old.map((id) =>
+              id.id.startsWith("temp-") ? savedLostID : id
+            )
+          : [savedLostID]
+      );
+
       alert("✅ Lost ID added successfully!");
-      onAdd(response);
-      queryClient.invalidateQueries({ queryKey: ["lostIDs"] });
+      onAdd(savedLostID);
       resetForm();
       onClose();
     },
-    onError: (error: unknown) => {
-      setIsUploading(false);
+    onError: (error, _newLostID, context) => {
       console.error("Upload Error:", error);
-      if (error instanceof Error) {
-        alert(`❌ Failed to upload Lost ID: ${error.message}`);
-      } else {
-        alert("❌ Failed to upload Lost ID: Unknown error");
+      alert("❌ Failed to upload Lost ID.");
+      if (context?.previousLostIDs) {
+        queryClient.setQueryData(["lostIDs"], context.previousLostIDs);
       }
     },
   });
@@ -79,30 +100,31 @@ const AddLostID: React.FC<AddLostIDProps> = ({ isOpen, onClose, onAdd }) => {
       [name]: value,
     }));
   };
-const handleAddLostID = () => {
-  const {
-    id_number = "",
-    owner_name = "",
-    category_id = "",
-    location_found = "",
-    date_found = "",
-    contact_info = ""
-  } = newLostID;
 
-  if (
-    !id_number.trim() ||
-    !owner_name.trim() ||
-    !category_id.trim() ||
-    !location_found.trim() ||
-    !date_found.trim() ||
-    !contact_info.trim()
-  ) {
-    alert("⚠️ All fields except comments are required.");
-    return;
-  }
+  const handleAddLostID = () => {
+    const {
+      id_number = "",
+      owner_name = "",
+      category_id = "",
+      location_found = "",
+      date_found = "",
+      contact_info = ""
+    } = newLostID;
 
-  mutation.mutate(newLostID);
-};
+    if (
+      !id_number.trim() ||
+      !owner_name.trim() ||
+      !category_id.trim() ||
+      !location_found.trim() ||
+      !date_found.trim() ||
+      !contact_info.trim()
+    ) {
+      alert("⚠️ All fields except comments are required.");
+      return;
+    }
+
+    mutation.mutate(newLostID);
+  };
 
   const resetForm = () => {
     setNewLostID({
@@ -162,9 +184,9 @@ const handleAddLostID = () => {
         <button
           onClick={handleAddLostID}
           className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition mt-4 w-full"
-          disabled={isUploading}
+          disabled={mutation.isPending}
         >
-          {isUploading ? "Uploading..." : "Add Lost ID"}
+          {mutation.isPending ? "Uploading..." : "Add Lost ID"}
         </button>
       </div>
     </Modal>

@@ -1,13 +1,15 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/utils/api";
 import { Category } from "@/types/types";
 
 interface EditCategoryProps {
   isOpen: boolean;
   onClose: () => void;
-  category: Category | null; // ✅ Use full Category type to ensure type consistency
-  onUpdate: (updatedCategory: Category) => void; // ✅ Expect full Category object
+  category: Category | null;
+  onUpdate: (updatedCategory: Category) => void;
 }
 
 const EditCategory: React.FC<EditCategoryProps> = ({ isOpen, onClose, category, onUpdate }) => {
@@ -16,7 +18,6 @@ const EditCategory: React.FC<EditCategoryProps> = ({ isOpen, onClose, category, 
 
   const queryClient = useQueryClient();
 
-  // ✅ Prefill form when category changes
   useEffect(() => {
     if (category) {
       setName(category.name);
@@ -24,51 +25,54 @@ const EditCategory: React.FC<EditCategoryProps> = ({ isOpen, onClose, category, 
     }
   }, [category]);
 
-  // ✅ Mutation for Updating Category
   const mutation = useMutation({
     mutationFn: async (updatedCategory: { id: string; name: string; recovery_fee: number }) => {
-      return { ...updatedCategory, created_at: category!.created_at }; // ✅ Ensure `created_at` is included
+      const response = await api.updateCategory(updatedCategory.id, {
+        name: updatedCategory.name,
+        recovery_fee: updatedCategory.recovery_fee,
+      });
+      return response;
     },
     onMutate: async (updatedCategory) => {
       await queryClient.cancelQueries({ queryKey: ["idCategories"] });
 
-      // ✅ Snapshot for rollback
       const previousCategories = queryClient.getQueryData<Category[]>(["idCategories"]);
 
-      // ✅ Optimistic Update
-      queryClient.setQueryData(["idCategories"], (old: Category[] | undefined) =>
-        old
-          ? old.map((cat) =>
-              cat.id === updatedCategory.id ? { ...cat, ...updatedCategory } : cat
-            )
-          : []
+      queryClient.setQueryData<Category[]>(["idCategories"], (old = []) =>
+        old.map((cat) =>
+          cat.id === updatedCategory.id ? { ...cat, ...updatedCategory } : cat
+        )
       );
 
       return { previousCategories };
     },
     onSuccess: (updatedCategory) => {
-      // ✅ Update cache
-      queryClient.invalidateQueries({ queryKey: ["idCategories"] });
-
-      // ✅ Pass full updated category to the parent
+      queryClient.setQueryData<Category[]>(["idCategories"], (old = []) =>
+        old.map((cat) => (cat.id === updatedCategory.id ? updatedCategory : cat))
+      );
       onUpdate(updatedCategory);
     },
-    onError: (error, updatedCategory, context) => {
-      console.error("Error updating category:", error);
+    onError: (_error, _updatedCategory, context) => {
       if (context?.previousCategories) {
-        // ❌ Rollback on failure
         queryClient.setQueryData(["idCategories"], context.previousCategories);
       }
+      alert("❌ Failed to update category");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["idCategories"] });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !recoveryFee) return alert("All fields are required!");
+    if (!name.trim() || !recoveryFee.trim()) {
+      alert("All fields are required!");
+      return;
+    }
 
     mutation.mutate({
       id: category!.id,
-      name,
+      name: name.trim(),
       recovery_fee: parseFloat(recoveryFee),
     });
 
@@ -78,7 +82,7 @@ const EditCategory: React.FC<EditCategoryProps> = ({ isOpen, onClose, category, 
   if (!isOpen || !category) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-96">
         <h2 className="text-xl font-bold mb-4">Edit Category</h2>
         <form onSubmit={handleSubmit}>
@@ -98,6 +102,7 @@ const EditCategory: React.FC<EditCategoryProps> = ({ isOpen, onClose, category, 
             <label className="block text-sm font-medium">Recovery Fee (KES)</label>
             <input
               type="number"
+              min="0"
               value={recoveryFee}
               onChange={(e) => setRecoveryFee(e.target.value)}
               className="w-full border px-3 py-2 rounded-lg mt-1"

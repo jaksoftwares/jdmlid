@@ -1,5 +1,4 @@
-// LostIDsPage.tsx
-"use client"
+"use client";
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,11 +17,11 @@ const LostIDsPage = () => {
 
   const queryClient = useQueryClient();
 
-  // ✅ Use React Query to fetch and cache Lost IDs
+  // Fetch Lost IDs using React Query
   const { data: lostIDs = [], isLoading, isError } = useQuery<LostID[], Error>({
-    queryKey: ["lostIDs"], 
-    queryFn: api.fetchLostIDs,  
-    staleTime: 10 * 60 * 1000,  
+    queryKey: ["lostIDs"],
+    queryFn: api.fetchLostIDs,
+    staleTime: 0, // Always refetch on invalidateQueries
   });
 
   return (
@@ -77,10 +76,8 @@ const LostIDsPage = () => {
       <AddLostID
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAdd={(newID: LostID) => {
-          queryClient.setQueryData(["lostIDs"], (prev: LostID[] | undefined) =>
-            prev ? [...prev, newID] : [newID]
-          );
+        onAdd={() => {
+          queryClient.invalidateQueries({ queryKey: ["lostIDs"] });
         }}
       />
 
@@ -89,10 +86,8 @@ const LostIDsPage = () => {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         lostID={selectedID}
-        onUpdate={(updatedID: LostID) => {
-          queryClient.setQueryData(["lostIDs"], (prev: LostID[] | undefined) =>
-            prev ? prev.map((id) => (id.id === updatedID.id ? updatedID : id)) : []
-          );
+        onUpdate={() => {
+          queryClient.invalidateQueries({ queryKey: ["lostIDs"] });
         }}
       />
 

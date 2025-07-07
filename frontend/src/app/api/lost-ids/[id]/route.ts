@@ -9,9 +9,9 @@ const supabase = createClient(
 // GET: Retrieve a specific Lost ID by ID
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const id = context.params.id;
+  const id = params.id;
 
   if (!id) {
     return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
@@ -19,7 +19,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from("lost_ids")
-    .select("*") // ✅ just fetch from your table — no join!
+    .select("*")
     .eq("id", id)
     .single();
 
@@ -34,15 +34,27 @@ export async function GET(
 // PUT: Update details of a specific Lost ID
 export async function PUT(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const id = context.params.id;
+  const id = params.id;
 
   if (!id) {
     return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
   }
 
-  const updateData = await req.json();
+  let updateData;
+  try {
+    updateData = await req.json();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (err) {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  // Defensive cleanup: remove invalid or unintended fields
+  delete updateData.id; // ID should not be updated
+  delete updateData.id_categories; // Invalid field (doesn't exist in your DB)
+
+  console.log("✅ Clean update data:", updateData);
 
   const { error: updateError } = await supabase
     .from("lost_ids")
@@ -71,9 +83,9 @@ export async function PUT(
 // DELETE: Remove a specific Lost ID
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const id = context.params.id;
+  const id = params.id;
 
   if (!id) {
     return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
