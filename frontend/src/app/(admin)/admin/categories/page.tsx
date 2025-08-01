@@ -17,49 +17,46 @@ const CategoriesPage = () => {
 
   const queryClient = useQueryClient();
 
-  // ✅ Fetch ID Categories using React Query
+  // Fetch ID Categories
   const { data: categories = [], isLoading, isError } = useQuery({
     queryKey: ["idCategories"],
     queryFn: api.fetchIDCategories,
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    staleTime: 10 * 60 * 1000,
   });
+
+  // Helpers for stats
+  const highestFee = categories.length ? Math.max(...categories.map(c => c.recovery_fee)) : 0;
+  const lowestFee = categories.length ? Math.min(...categories.map(c => c.recovery_fee)) : 0;
 
   return (
     <div className="container mx-auto p-6 pl-0">
       <h1 className="text-3xl font-bold mb-6 text-left">ID Categories Management</h1>
 
       {isLoading && <p>Loading categories...</p>}
-      {isError && <p>Error loading categories.</p>}
+      {isError && <p className="text-red-500">Error loading categories.</p>}
 
-      {/* 📊 Overview Section */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-blue-100 p-4 rounded-lg text-center shadow">
           <h2 className="text-lg font-semibold">Total Categories</h2>
           <p className="text-2xl font-bold">{categories.length}</p>
         </div>
         <div className="bg-yellow-100 p-4 rounded-lg text-center shadow">
           <h2 className="text-lg font-semibold">Highest Recovery Fee</h2>
-          <p className="text-2xl font-bold">
-            KES {Math.max(...categories.map((c) => c.recovery_fee), 0)}
-          </p>
+          <p className="text-2xl font-bold">KES {highestFee}</p>
         </div>
         <div className="bg-green-100 p-4 rounded-lg text-center shadow">
           <h2 className="text-lg font-semibold">Lowest Recovery Fee</h2>
-          <p className="text-2xl font-bold">
-            KES {Math.min(...categories.map((c) => c.recovery_fee), 0)}
-          </p>
+          <p className="text-2xl font-bold">KES {lowestFee}</p>
         </div>
       </div>
 
-      {/* ➕ Add Category Button */}
       <button
         onClick={() => setIsAddModalOpen(true)}
-        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition mb-6 block"
+        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition mb-6"
       >
         + Add New Category
       </button>
 
-      {/* 📋 Categories Table */}
       <CategoryTable
         categories={categories}
         onEdit={(category) => {
@@ -72,30 +69,25 @@ const CategoriesPage = () => {
         }}
       />
 
-      {/* ➕ Add Category Modal */}
       <AddCategory
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={(newCategory: Category) => {
-          queryClient.setQueryData(["idCategories"], (prev: Category[] | undefined) =>
-            prev ? [...prev, newCategory] : [newCategory]
-          );
+          queryClient.setQueryData<Category[]>(["idCategories"], (prev = []) => [...prev, newCategory]);
         }}
       />
 
-      {/* ✏️ Edit Category Modal */}
       <EditCategory
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         category={selectedCategory}
         onUpdate={(updatedCategory: Category) => {
-          queryClient.setQueryData(["idCategories"], (prev: Category[] | undefined) =>
-            prev ? prev.map((c) => (c.id === updatedCategory.id ? updatedCategory : c)) : []
+          queryClient.setQueryData<Category[]>(["idCategories"], (prev = []) =>
+            prev.map((c) => (c.id === updatedCategory.id ? updatedCategory : c))
           );
         }}
       />
 
-      {/* 🗑 Delete Confirmation Modal */}
       <DeleteCategory
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

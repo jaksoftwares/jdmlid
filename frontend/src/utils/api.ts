@@ -168,72 +168,80 @@ export const deleteLostID = async (
 // =============================
 
 // 🔄 Fetch all categories
-const fetchIDCategories = async (): Promise<Category[]> => {
-    try {
-        console.log("Fetching ID Categories...");
-        const response = await fetch(CATEGORY_URL);
-        return await handleResponse<Category[]>(response);
-    } catch (error) {
-        console.error("Error fetching categories:", error);
-        return [];
-    }
+export const fetchIDCategories = async (): Promise<Category[]> => {
+  try {
+    console.log("Fetching ID Categories...");
+    const response = await fetch(CATEGORY_URL);
+    return await handleResponse<Category[]>(response);
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return [];
+  }
 };
 
-// Fetch category by ID
-const fetchCategoryById = async (categoryId: string): Promise<Category> => {
-    try {
-        const response = await fetch(`${CATEGORY_URL}/${categoryId}`);
-        if (!response.ok) {
-            throw new Error("Category not found");
-        }
-        return await handleResponse<Category>(response); // Assuming handleResponse handles JSON parsing and error handling
-    } catch (error) {
-        console.error("Error fetching category by ID:", error);
-        throw error; // Re-throw the error to be caught in the component
+// 🔍 Fetch a single category by ID
+export const fetchCategoryById = async (id: string): Promise<Category> => {
+  try {
+    const response = await fetch(`${CATEGORY_URL}/${id}`);
+    if (!response.ok) {
+      throw new Error("Category not found");
     }
-}
+    return await handleResponse<Category>(response);
+  } catch (error) {
+    console.error("Error fetching category by ID:", error);
+    throw error;
+  }
+};
 
 // ➕ Add a new category
-const addCategory = async (newCategory: { name: string; recovery_fee: number }): Promise<Category> => {
-    try {
-        const response = await fetch(CATEGORY_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(newCategory),
-        });
-        return await handleResponse<Category>(response);
-    } catch (error) {
-        console.error("Error adding category:", error);
-        throw error;
-    }
+export const addCategory = async (newCategory: { name: string; recovery_fee: number }): Promise<Category> => {
+  try {
+    const response = await fetch(CATEGORY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newCategory),
+    });
+
+    const data = await handleResponse<{ category: Category }>(response);
+    return data.category;
+  } catch (error) {
+    console.error("Error adding category:", error);
+    throw error;
+  }
 };
 
-// ✏️ Update a category
-const updateCategory = async (id: string, updateData: Partial<Category>): Promise<Category> => {
-    try {
-        const response = await fetch(`${CATEGORY_URL}/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updateData),
-        });
-        return await handleResponse<Category>(response);
-    } catch (error) {
-        console.error("Error updating category:", error);
-        throw error;
-    }
+// ✏️ Update an existing category
+export const updateCategory = async (
+  id: string,
+  updateData: { name: string; recovery_fee: number }
+): Promise<Category> => {
+  try {
+    const response = await fetch(`${CATEGORY_URL}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updateData),
+    });
+
+    const data = await handleResponse<{ category: Category }>(response);
+    return data.category;
+  } catch (error) {
+    console.error("Error updating category:", error);
+    throw error;
+  }
 };
 
 // 🗑 Delete a category
-const deleteCategory = async (id: string): Promise<{ message: string }> => {
-    try {
-        const response = await fetch(`${CATEGORY_URL}/${id}`, { method: "DELETE" });
-        return await handleResponse<{ message: string }>(response);
-    } catch (error) {
-        console.error("Error deleting category:", error);
-        throw error;
-    }
+export const deleteCategory = async (id: string): Promise<{ message: string }> => {
+  try {
+    const response = await fetch(`${CATEGORY_URL}/${id}`, {
+      method: "DELETE",
+    });
+    return await handleResponse<{ message: string }>(response);
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    throw error;
+  }
 };
-
 
 // =============================
 // ✅ USER FUNCTIONS

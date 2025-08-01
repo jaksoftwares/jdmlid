@@ -1,13 +1,14 @@
 "use client";
+
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/utils/api";
-import { Category } from "@/types/types"; // Ensure you have a proper Category type
+import { Category } from "@/types/types";
 
 interface AddCategoryProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (newCategory: Category) => void; // ✅ Add the missing prop
+  onAdd: (newCategory: Category) => void;
 }
 
 const AddCategory: React.FC<AddCategoryProps> = ({ isOpen, onClose, onAdd }) => {
@@ -16,42 +17,37 @@ const AddCategory: React.FC<AddCategoryProps> = ({ isOpen, onClose, onAdd }) => 
 
   const queryClient = useQueryClient();
 
-  // ✅ Mutation with Optimistic UI Update
   const mutation = useMutation({
     mutationFn: async (newCategory: { name: string; recovery_fee: number }) => {
-      const response = await api.addCategory(newCategory);
-      return response;
+      return await api.addCategory(newCategory);
     },
     onMutate: async (newCategory) => {
       await queryClient.cancelQueries({ queryKey: ["idCategories"] });
 
-      const previousCategories = queryClient.getQueryData<Category[]>(["idCategories"]);
+      const previous = queryClient.getQueryData<Category[]>(["idCategories"]);
 
+      // Optimistic update
       const tempCategory: Category = {
-          id: `temp-${Date.now()}`,
-          ...newCategory,
-          created_at: ""
+        id: `temp-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        ...newCategory,
       };
 
-      queryClient.setQueryData(["idCategories"], (old: Category[] | undefined) =>
-        old ? [...old, tempCategory] : [tempCategory]
-      );
+      queryClient.setQueryData<Category[]>(["idCategories"], (old = []) => [...old, tempCategory]);
 
-      return { previousCategories };
+      return { previous };
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["idCategories"], (old: Category[] | undefined) =>
-        old ? old.map((cat) => (cat.id.startsWith("temp-") ? data : cat)) : [data]
+      queryClient.setQueryData<Category[]>(["idCategories"], (old = []) =>
+        old.map((cat) => (cat.id.startsWith("temp-") ? data : cat))
       );
-
-      // ✅ Call onAdd with the new category
       onAdd(data);
     },
-    onError: (error, newCategory, context) => {
-      console.error("Error adding category:", error);
-      if (context?.previousCategories) {
-        queryClient.setQueryData(["idCategories"], context.previousCategories);
+    onError: (_error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["idCategories"], context.previous);
       }
+      alert("❌ Failed to add category");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["idCategories"] });
@@ -60,10 +56,13 @@ const AddCategory: React.FC<AddCategoryProps> = ({ isOpen, onClose, onAdd }) => 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !recoveryFee) return alert("All fields are required!");
+    if (!name.trim() || !recoveryFee.trim()) {
+      alert("All fields are required!");
+      return;
+    }
 
     mutation.mutate({
-      name,
+      name: name.trim(),
       recovery_fee: parseFloat(recoveryFee),
     });
 
@@ -75,7 +74,7 @@ const AddCategory: React.FC<AddCategoryProps> = ({ isOpen, onClose, onAdd }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-96">
         <h2 className="text-xl font-bold mb-4">Add New Category</h2>
         <form onSubmit={handleSubmit}>
@@ -95,6 +94,7 @@ const AddCategory: React.FC<AddCategoryProps> = ({ isOpen, onClose, onAdd }) => 
             <label className="block text-sm font-medium">Recovery Fee (KES)</label>
             <input
               type="number"
+              min="0"
               value={recoveryFee}
               onChange={(e) => setRecoveryFee(e.target.value)}
               className="w-full border px-3 py-2 rounded-lg mt-1"

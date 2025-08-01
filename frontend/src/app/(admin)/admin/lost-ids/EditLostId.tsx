@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Modal from "../components/Modal";
 import api from "@/utils/api";
-import { LostID } from "@/types/types";
+import { LostID, Category } from "@/types/types";
 
 interface EditLostIDProps {
   isOpen: boolean;
@@ -16,6 +16,7 @@ interface EditLostIDProps {
 const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<LostID>>({});
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     if (lostID) {
@@ -23,29 +24,65 @@ const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
     }
   }, [lostID]);
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.fetchIDCategories?.();
+        if (response && Array.isArray(response)) {
+          setCategories(response);
+        } else {
+          console.error("Failed to fetch categories");
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [isOpen]);
+
   const mutation = useMutation({
     mutationFn: async (updatedData: Partial<LostID>) => {
       if (!updatedData.id) throw new Error("Missing ID");
       return await api.updateLostID(updatedData.id, updatedData);
     },
-    onSuccess: (updatedLostID: LostID) => {
+    onMutate: async (updatedData) => {
+      await queryClient.cancelQueries({ queryKey: ["lostIDs"] });
+      const previousLostIDs = queryClient.getQueryData<LostID[]>(["lostIDs"]);
+
+      // Optimistic cache update
+      queryClient.setQueryData(["lostIDs"], (old: LostID[] | undefined) =>
+        old
+          ? old.map((id) =>
+              id.id === updatedData.id ? { ...id, ...updatedData } : id
+            )
+          : []
+      );
+
+      return { previousLostIDs };
+    },
+    onSuccess: (updatedLostID) => {
       alert("✅ Lost ID updated successfully.");
       onUpdate(updatedLostID);
-      queryClient.invalidateQueries({ queryKey: ["lostIDs"] });
+
+      // No need for invalidateQueries — cache is already updated
       onClose();
     },
-    onError: (error: unknown) => {
+    onError: (error, updatedData, context) => {
       console.error("Error updating lost ID:", error);
-      if (error instanceof Error) {
-        alert(`❌ Failed to update Lost ID: ${error.message}`);
-      } else {
-        alert("❌ Failed to update Lost ID: Unknown error");
+      alert("❌ Failed to update Lost ID. Reverting changes.");
+
+      // Rollback
+      if (context?.previousLostIDs) {
+        queryClient.setQueryData(["lostIDs"], context.previousLostIDs);
       }
     },
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -71,7 +108,7 @@ const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
             name="owner_name"
             value={formData.owner_name || ""}
             onChange={handleChange}
-            placeholder="Enter Owner Name"
+            placeholder="Owner Name"
             className="w-full p-2 border rounded"
           />
           <input
@@ -79,7 +116,7 @@ const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
             name="id_number"
             value={formData.id_number || ""}
             onChange={handleChange}
-            placeholder="Enter ID Number"
+            placeholder="ID Number"
             className="w-full p-2 border rounded"
           />
           <input
@@ -87,7 +124,7 @@ const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
             name="location_found"
             value={formData.location_found || ""}
             onChange={handleChange}
-            placeholder="Enter Location Found"
+            placeholder="Location Found"
             className="w-full p-2 border rounded"
           />
           <input
@@ -95,6 +132,21 @@ const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
             name="date_found"
             value={formData.date_found || ""}
             onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+          <input
+            type="text"
+            name="contact_info"
+            value={formData.contact_info || ""}
+            onChange={handleChange}
+            placeholder="Contact Info"
+            className="w-full p-2 border rounded"
+          />
+          <textarea
+            name="comments"
+            value={formData.comments || ""}
+            onChange={handleChange}
+            placeholder="Comments"
             className="w-full p-2 border rounded"
           />
           <select
@@ -106,12 +158,25 @@ const EditLostID = ({ isOpen, onClose, lostID, onUpdate }: EditLostIDProps) => {
             <option value="Pending">Pending</option>
             <option value="Collected">Collected</option>
           </select>
+          <select
+            name="category_id"
+            value={formData.category_id || ""}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select a Category</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
           <button
             onClick={handleSubmit}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            disabled={mutation.status === "pending"}
+            disabled={mutation.isPending}
           >
-            {mutation.status === "pending" ? "Saving..." : "Save Changes"}
+            {mutation.isPending ? "Saving..." : "Save Changes"}
           </button>
         </div>
       ) : (

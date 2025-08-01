@@ -9,6 +9,7 @@ export interface LostID {
   status: string;
   contact_info: string;
   comments: string;
+  
 }
 
 export type NewLostID = Omit<LostID, 'id'>; 
