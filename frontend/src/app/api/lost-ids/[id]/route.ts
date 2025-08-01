@@ -9,9 +9,9 @@ const supabase = createClient(
 // GET: Retrieve a specific Lost ID by ID
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const id = params.id;
+  const id = context.params.id;
 
   if (!id) {
     return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
@@ -34,9 +34,9 @@ export async function GET(
 // PUT: Update details of a specific Lost ID
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const id = params.id;
+  const id = context.params.id;
 
   if (!id) {
     return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
@@ -83,9 +83,9 @@ export async function PUT(
 // DELETE: Remove a specific Lost ID
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const id = params.id;
+  const id = context.params.id;
 
   if (!id) {
     return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
