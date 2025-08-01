@@ -9,9 +9,9 @@ const supabase = createClient(
 // GET a specific category
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params;
+  const id = context.params.id;
 
   if (!id) {
     return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
@@ -34,9 +34,9 @@ export async function GET(
 // PUT (update a category)
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params;
+  const id = context.params.id;
   const { name, recovery_fee } = await req.json();
 
   if (!name || recovery_fee === undefined || recovery_fee === null) {
@@ -64,9 +64,9 @@ export async function PUT(
 // DELETE (delete a category)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params;
+  const id = context.params.id;
 
   const { error } = await supabase
     .from('id_categories')
